@@ -1,24 +1,62 @@
-# KASE Vision v6
+# KASE Vision
 
-KASE Vision — educational analytics platform for Kazakhstan Stock Exchange (KASE).
+**KASE Vision** — исследовательский веб-прототип для анализа акций Казахстанской фондовой биржи (KASE), визуализации исторической динамики и учебного сравнения портфелей.
 
-## Features
-- KASE public market monitor with automatic refresh
-- Historical price and monthly-return analysis
-- Portfolio analytics based on 60,000 feasible portfolios
-- Minimum-risk, maximum-Sharpe and equal-weight comparisons
-- Interactive portfolio frontier
-- Portfolio variant explorer
+## Что умеет прототип
 
-## Method
-The analytics engine uses synchronized price histories, monthly returns, annualized mean returns and covariance, non-negative portfolio weights summing to 1, and Sharpe ratio with a zero risk-free rate for the educational model.
+- единый каталог из 6 учебных активов: HSBK, KSPI, KZAP, KMGZ, KCEL, KEGC;
+- историческая динамика и месячные доходности;
+- средние доходности и ковариационная матрица;
+- ровно **60 000** допустимых портфелей при `seed=42`;
+- сравнение равновзвешенного, минимально-рискового и максимизирующего Sharpe портфелей;
+- просмотр конкретных вариантов портфелей и их весов;
+- автоматическое обновление опубликованных текущих цен KASE каждые 25 секунд.
 
-The demo dataset contains 24 months and uses a fixed random seed of 42.
+## Архитектура
 
-## Market data note
-The public monitor reads published KASE investor pages and refreshes automatically. It is **not a licensed exchange real-time feed**. True exchange real-time data requires the appropriate KASE market-data access (for example FIX/FAST).
+```text
+KASE Vision
+├── Web UI (index.html)
+│   ├── Обзор / рынок
+│   ├── Аналитика
+│   ├── Portfolio Lab
+│   ├── Все варианты
+│   └── Данные
+├── FastAPI backend (server.py)
+│   ├── /api/analysis
+│   ├── /api/portfolios
+│   ├── /api/live
+│   └── /api/upload
+├── Analytics Engine
+│   ├── monthly returns
+│   ├── mean / covariance
+│   ├── portfolio risk
+│   ├── Sharpe ratio
+│   └── SLSQP optimization
+└── Data layer
+    ├── demo_prices.csv
+    └── KASE public-page adapter
+```
 
-## Run locally
+Архитектура намеренно сделана как **modular monolith**: один FastAPI-сервис с разделёнными зонами ответственности. Для учебного проекта это проще тестировать и защищать, а позже отдельные модули можно вынести в сервисы.
+
+## Методика
+
+1. Выбирается общий период и синхронизированные месячные цены.
+2. Цены преобразуются в месячные доходности: `R_t = P_t / P_(t-1) - 1`.
+3. Рассчитываются средние доходности и ковариационная матрица.
+4. Генерируются 60 000 допустимых весов (`w_i >= 0`, `sum(w_i)=1`).
+5. Для каждого портфеля рассчитываются доходность, риск и Sharpe.
+6. Отбираются минимум риска и максимум Sharpe; результаты сравниваются с равными весами.
+
+Учебная выборка: **24 месяца, фиксированный seed = 42**. Перед конкурсной подачей расчёт следует повторить на реальных котировках с проверкой качества данных.
+
+## Текущие данные KASE
+
+Публичная версия использует опубликованные страницы KASE и автообновление. Это **не лицензированный биржевой real-time feed**. Настоящий биржевой real-time доступ должен подключаться через соответствующий разрешённый KASE market-data продукт/интерфейс; секретные учётные данные в браузер не помещаются.
+
+## Запуск локально
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -26,6 +64,8 @@ pip install -r requirements.txt
 uvicorn server:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://127.0.0.1:8000
+Открыть: `http://127.0.0.1:8000`
 
-> This project is an educational/research simulator and does not place broker orders or provide personalized investment advice.
+## Назначение
+
+Проект предназначен для обучения и исследовательской демонстрации. Portfolio Lab — гипотетическая математическая модель; сайт не выполняет брокерские операции и не является персональной инвестиционной рекомендацией.
