@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import httpx
 import re
+from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
@@ -92,17 +93,29 @@ async def fetch_kase_public(ticker:str):
     url=f"https://kase.kz/ru/investors/shares/{ticker}"
     try:
         async with httpx.AsyncClient(timeout=10,follow_redirects=True,headers={"User-Agent":"KASE-Vision-Educational/6.0"}) as client:
-            r=await client.get(url); r.raise_for_status(); text=re.sub(r"\s+"," ",r.text)
-    except Exception as e: raise HTTPException(status_code=502,detail=f"Не удалось получить публичные данные KASE: {e}")
-    patterns=[rf"{re.escape(ticker)}.*?([0-9][0-9\s\xa0]*[.,][0-9]+).*?цена последней сделки.*?([+-]?[0-9][0-9\s\xa0]*[.,][0-9]+).*?тренд, KZT.*?([+-]?[0-9][0-9\s\xa0]*[.,][0-9]+).*?тренд, %",rf"{re.escape(ticker)}.*?([0-9][0-9\s\xa0]*[.,][0-9]+).*?last trade price.*?([+-]?[0-9][0-9\s\xa0]*[.,][0-9]+).*?trend, KZT.*?([+-]?[0-9][0-9\s\xa0]*[.,][0-9]+).*?trend, %"]
+            r=await client.get(url)
+            r.raise_for_status()
+        soup=BeautifulSoup(r.text,"html.parser")
+        for tag in soup(["script","style","noscript"]):
+            tag.decompose()
+        text=re.sub(r"\s+"," ",soup.get_text(" ",strip=True))
+    except Exception as e:
+        raise HTTPException(status_code=502,detail=f"Не удалось получить публичные данные KASE: {e}")
+
+    num=r"([+-]?[0-9][0-9\s\xa0]*[.,][0-9]+)"
+    patterns=[
+        rf"{num}\s*цена последней сделки\s*{num}\s*тренд,\s*KZT\s*{num}\s*тренд,\s*%",
+        rf"{num}\s*last trade price\s*{num}\s*trend,\s*KZT\s*{num}\s*trend,\s*%",
+    ]
     price=change=change_pct=None
     for pat in patterns:
         m=re.search(pat,text,flags=re.I)
-        if m: price=_parse_num(m.group(1)); change=_parse_num(m.group(2)); change_pct=_parse_num(m.group(3)); break
+        if m:
+            price=_parse_num(m.group(1)); change=_parse_num(m.group(2)); change_pct=_parse_num(m.group(3)); break
+
     if price is None:
-        m=re.search(rf"{re.escape(ticker)}.*?([0-9][0-9\s\xa0]*[.,][0-9]+)",text,flags=re.I)
-        if m: price=_parse_num(m.group(1))
-    if price is None: raise HTTPException(status_code=502,detail="Публичная страница KASE не вернула цену.")
+        raise HTTPException(status_code=502,detail=f"Не удалось распознать котировку KASE для {ticker}.")
+
     data={"ticker":ticker,"name":NAMES[ticker],"price":price,"change":change,"change_pct":change_pct,"source":"KASE PUBLIC PAGE","fetched_at":now.isoformat(),"url":url,"note":"Публичные данные KASE; это не лицензированный биржевой real-time feed."}
     live_cache[ticker]={"fetched_at":now,"data":data}; return data
 
