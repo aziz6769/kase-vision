@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Apply the production UI repair before starting FastAPI.
+RUN python3 fix_local.py
+
 EXPOSE 8000
 
 CMD ["sh", "-c", "uvicorn server:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000}"]
