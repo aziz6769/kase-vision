@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: kase-vision
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://kase-vision.onrender.com,http://localhost:8000,http://127.0.0.1:8000
