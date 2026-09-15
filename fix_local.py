@@ -4,20 +4,35 @@ BASE = Path(__file__).resolve().parent
 index = BASE / "index.html"
 server = BASE / "server.py"
 
-# Fix the ticker display name typo introduced during deployment preparation.
+# Fix ticker display name typo.
 if server.exists():
     text = server.read_text(encoding="utf-8")
     text = text.replace('"KEGC":"KEGC"', '"KEGC":"KEGOC"')
     server.write_text(text, encoding="utf-8")
 
-# Add a small, independent UI repair layer. It uses the existing API and
-# fills the two tables that can remain empty if the original frontend JS
-# does not call its table renderer after the analysis is loaded.
+if not index.exists():
+    raise SystemExit('index.html not found')
+
+text = index.read_text(encoding="utf-8")
+
+# Fix duplicate HTML id: the section and the table cannot share #variants.
+text = text.replace('<section id="variants" class="card">', '<section id="variantsSection" class="card">')
+text = text.replace('<a href="#variants">Варианты</a>', '<a href="#variantsSection">Варианты</a>')
+
+# The original frontend uses page in inline onclick handlers. Keep the
+# global page variable synchronized with the repair layer.
+text = text.replace(
+    'window.loadVariants = renderVariants;',
+    '''window.loadVariants = function(p){
+    page = Math.max(1, Number(p)||1);
+    return renderVariants(page);
+  };'''
+)
+
 patch = r'''<script id="kase-vision-ui-repair">
 (function(){
   const esc = v => String(v).replace(/[&<>\"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
   const pct = v => (Number(v) * 100).toFixed(2) + '%';
-  let repairPage = 1;
 
   async function getAnalysis(){
     const r = await fetch('/api/analysis');
@@ -40,13 +55,13 @@ patch = r'''<script id="kase-vision-ui-repair">
   }
 
   async function renderVariants(p){
-    repairPage = Math.max(1, Number(p)||1);
+    page = Math.max(1, Number(p)||1);
     const table = document.getElementById('variants');
     if(!table) return;
     const sort = document.getElementById('sort')?.value || 'sharpe';
     const direction = document.getElementById('dir')?.value || 'desc';
     try{
-      const r = await fetch('/api/portfolios?page='+repairPage+'&limit=25&sort='+encodeURIComponent(sort)+'&direction='+encodeURIComponent(direction));
+      const r = await fetch('/api/portfolios?page='+page+'&limit=25&sort='+encodeURIComponent(sort)+'&direction='+encodeURIComponent(direction));
       if(!r.ok) throw new Error('portfolios '+r.status);
       const data = await r.json();
       table.innerHTML = '<tr><th>#</th><th>Доходность</th><th>Риск</th><th>Sharpe</th></tr>' +
@@ -62,8 +77,10 @@ patch = r'''<script id="kase-vision-ui-repair">
     }
   }
 
-  // Override the inline pagination callback used by the existing page.
-  window.loadVariants = renderVariants;
+  window.loadVariants = function(p){
+    page = Math.max(1, Number(p)||1);
+    return renderVariants(page);
+  };
 
   window.addEventListener('load', function(){
     setTimeout(function(){
@@ -79,16 +96,15 @@ patch = r'''<script id="kase-vision-ui-repair">
 })();
 </script>'''
 
-if index.exists():
-    text = index.read_text(encoding="utf-8")
-    marker = '<script id="kase-vision-ui-repair">'
-    if marker not in text:
-        if '</body>' not in text:
-            raise SystemExit('index.html: </body> not found')
-        text = text.replace('</body>', patch + '\n</body>')
-        index.write_text(text, encoding="utf-8")
-        print('KASE Vision UI repair applied.')
-    else:
-        print('KASE Vision UI repair already present.')
+marker = '<script id="kase-vision-ui-repair">'
+if marker in text:
+    start = text.index(marker)
+    end = text.index('</script>', start) + len('</script>')
+    text = text[:start] + patch + text[end:]
 else:
-    raise SystemExit('index.html not found')
+    if '</body>' not in text:
+        raise SystemExit('index.html: </body> not found')
+    text = text.replace('</body>', patch + '\n</body>')
+
+index.write_text(text, encoding="utf-8")
+print('KASE Vision production UI repair applied.')
