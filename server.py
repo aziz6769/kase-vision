@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import io
+import os
 import numpy as np
 import pandas as pd
 import httpx
@@ -20,9 +21,13 @@ BASE = Path(__file__).resolve().parent
 DEMO = BASE / "data" / "demo_prices.csv"
 N_PORTFOLIOS = 60000
 SEED = 42
-NAMES = {"HSBK":"Halyk Bank","KSPI":"Kaspi.kz","KZAP":"Kazatomprom","KMGZ":"KazMunayGas","KCEL":"Kcell","KEGC":"KEGOC"}
+NAMES = {"HSBK":"Halyk Bank","KSPI":"Kaspi.kz","KZAP":"Kazatomprom","KMGZ":"KazMunayGas","KCEL":"Kcell","KEGC":"KEGC"}
 app = FastAPI(title="KASE Vision", version="6.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# CORS is configurable through the environment. Keep the local defaults for development;
+# production hosts should set CORS_ORIGINS to their real frontend origin(s).
+CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if x.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 state = {"source":"DEMO • 24 месяца • seed=42","result":None,"weights":None,"portfolio_metrics":None}
 
 def normalize(df):
@@ -70,7 +75,7 @@ def calculate(df):
     norm=[]
     for t in assets:
         vals=(monthly[t]/monthly[t].iloc[0]).round(6).tolist(); norm.append({"ticker":t,"name":NAMES[t],"values":[1.0]+vals})
-    return {"period":{"start":monthly.index.min().strftime("%Y-%m"),"end":monthly.index.max().strftime("%Y-%m"),"months":int(len(monthly)),"assets":assets},"portfolio_count":N_PORTFOLIOS,"seed":SEED,"normalized":norm,"monthly_returns":[{"date":d.strftime("%Y-%m"),**{t:round(float(row[t]),6) for t in assets}} for d,row in R.iterrows()],"mean_monthly":{t:round(float(mean_m[t]),6) for t in assets},"annual_mean":{t:round(float(mu[i]),6) for i,t in enumerate(assets)},"cumulative":{t:round(float(((1+R[t]).prod()-1)),6) for t in assets},"covariance":[[round(float(x),8) for x in row] for row in cov_m.values],"cloud":[{"risk":round(float(p_risk[i]),6),"return":round(float(p_ret[i]),6),"sharpe":round(float(p_sharpe[i]),6)} for i in display_idx],"frontier":[{"risk":round(float(p_risk[i]),6),"return":round(float(p_ret[i]),6)} for i in frontier],"portfolios":portfolios,"method":{"returns":"R_t = P_t / P_(t-1) - 1","expected_return":"E(Rp) = w^T μ","variance":"σ²p = w^T Σ w","sharpe":"Sharpe = (E(Rp) - Rf) / σp","rf":0.0,"constraints":"wi ≥ 0; Σwi = 1","optimizer":"SLSQP" if SCIPY_OK else "feasible random search"}}
+    return {"period":{"start":monthly.index.min().strftime("%Y-%m"),"end":monthly.index.max().strftime("%Y-%m"),"months":int(len(monthly)),"assets":assets},"portfolio_count":N_PORTFOLIOS,"seed":SEED,"normalized":norm,"monthly_returns":[{"date":d.strftime("%Y-%m"),**{t:round(float(row[t]),6) for t in assets}} for d,row in R.iterrows()],"mean_monthly":{t:round(float(mean_m[t]),6) for t in assets},"annual_mean":{t:round(float(mu[i]),6) for i,t in enumerate(assets)},"cumulative":{t:round(float(((1+R[t]).prod()-1)),6) for t in assets},"covariance":[[round(float(x),8) for x in row] for row in cov_m.values],"cloud":[{"risk":round(float(p_risk[i]),6),"return":round(float(p_ret[i]),6),"sharpe":round(float(p_sharpe[i]),6)} for i in display_idx],"frontier":[{"risk":round(float(p_risk[i]),6),"return":round(float(p_ret[i]),6)} for i in frontier],"portfolios":portfolios,"method":{"returns":"R_t = P_t / P_(t-1) - 1","expected_return":"E(Rp) = w^T μ","variance":"σ²p = w^T Σw","sharpe":"Sharpe = (E(Rp) - Rf) / σp","rf":0.0,"constraints":"wi ≥ 0; Σwi = 1","optimizer":"SLSQP" if SCIPY_OK else "feasible random search"}}
 
 LIVE_TTL=25; live_cache={}
 def _parse_num(value):
