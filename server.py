@@ -23,10 +23,8 @@ DEMO = BASE / "data" / "demo_prices.csv"
 N_PORTFOLIOS = 60000
 SEED = 42
 NAMES = {"HSBK":"Halyk Bank","KSPI":"Kaspi.kz","KZAP":"Kazatomprom","KMGZ":"KazMunayGas","KCEL":"Kcell","KEGC":"KEGC"}
-app = FastAPI(title="KASE Vision", version="6.0")
+app = FastAPI(title="KASE Vision", version="6.1")
 
-# CORS is configurable through the environment. Keep the local defaults for development;
-# production hosts should set CORS_ORIGINS to their real frontend origin(s).
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 state = {"source":"DEMO • 24 месяца • seed=42","result":None,"weights":None,"portfolio_metrics":None}
@@ -78,53 +76,94 @@ def calculate(df):
         vals=(monthly[t]/monthly[t].iloc[0]).round(6).tolist(); norm.append({"ticker":t,"name":NAMES[t],"values":[1.0]+vals})
     return {"period":{"start":monthly.index.min().strftime("%Y-%m"),"end":monthly.index.max().strftime("%Y-%m"),"months":int(len(monthly)),"assets":assets},"portfolio_count":N_PORTFOLIOS,"seed":SEED,"normalized":norm,"monthly_returns":[{"date":d.strftime("%Y-%m"),**{t:round(float(row[t]),6) for t in assets}} for d,row in R.iterrows()],"mean_monthly":{t:round(float(mean_m[t]),6) for t in assets},"annual_mean":{t:round(float(mu[i]),6) for i,t in enumerate(assets)},"cumulative":{t:round(float(((1+R[t]).prod()-1)),6) for t in assets},"covariance":[[round(float(x),8) for x in row] for row in cov_m.values],"cloud":[{"risk":round(float(p_risk[i]),6),"return":round(float(p_ret[i]),6),"sharpe":round(float(p_sharpe[i]),6)} for i in display_idx],"frontier":[{"risk":round(float(p_risk[i]),6),"return":round(float(p_ret[i]),6)} for i in frontier],"portfolios":portfolios,"method":{"returns":"R_t = P_t / P_(t-1) - 1","expected_return":"E(Rp) = w^T μ","variance":"σ²p = w^T Σw","sharpe":"Sharpe = (E(Rp) - Rf) / σp","rf":0.0,"constraints":"wi ≥ 0; Σwi = 1","optimizer":"SLSQP" if SCIPY_OK else "feasible random search"}}
 
-LIVE_TTL=25; live_cache={}
+LIVE_TTL=25
+live_cache={}
+
+_NUM_TOKEN_RE=re.compile(r"^[+\-−]?\d[\d\s\xa0]*(?:[.,]\d+)?$")
+
 def _parse_num(value):
-    if value is None:return None
-    x=str(value).replace("\xa0"," ").replace(" ","").replace(",","."); x=re.sub(r"[^0-9.\-+]","",x)
-    try:return float(x)
-    except:return None
+    if value is None: return None
+    x=str(value).replace("−","-").replace("\xa0"," ").replace(" ","").replace(",",".")
+    x=re.sub(r"[^0-9.\-+]","",x)
+    try: return float(x)
+    except: return None
+
+def _value_before_label(strings, labels):
+    labels=[re.sub(r"\s+"," ",x).strip().lower() for x in labels]
+    for i,raw in enumerate(strings):
+        current=re.sub(r"\s+"," ",raw).strip()
+        low=current.lower()
+        for label in labels:
+            if label not in low:
+                continue
+            # Sometimes the number and its label are in one text node.
+            before=low.split(label,1)[0].strip()
+            if before:
+                m=re.search(r"([+\-−]?\d[\d\s\xa0]*(?:[.,]\d+)?)\s*$",before)
+                if m:
+                    val=_parse_num(m.group(1))
+                    if val is not None: return val
+            # Normally KASE renders the number as the immediately preceding text node.
+            for j in range(i-1,max(-1,i-5),-1):
+                candidate=strings[j].strip()
+                if _NUM_TOKEN_RE.fullmatch(candidate):
+                    val=_parse_num(candidate)
+                    if val is not None: return val
+    return None
 
 async def fetch_kase_public(ticker:str):
     ticker=ticker.upper().strip()
-    if ticker not in NAMES: raise HTTPException(status_code=404,detail="Тикер не поддерживается.")
-    now=datetime.now(timezone.utc); cached=live_cache.get(ticker)
-    if cached and (now-cached["fetched_at"]).total_seconds()<LIVE_TTL:return cached["data"]
+    if ticker not in NAMES:
+        raise HTTPException(status_code=404,detail="Тикер не поддерживается.")
+    now=datetime.now(timezone.utc)
+    cached=live_cache.get(ticker)
+    if cached and (now-cached["fetched_at"]).total_seconds()<LIVE_TTL:
+        return cached["data"]
     url=f"https://kase.kz/ru/investors/shares/{ticker}"
     try:
-        async with httpx.AsyncClient(timeout=10,follow_redirects=True,headers={"User-Agent":"KASE-Vision-Educational/6.0"}) as client:
+        async with httpx.AsyncClient(timeout=12,follow_redirects=True,headers={"User-Agent":"Mozilla/5.0 KASE-Vision/6.1"}) as client:
             r=await client.get(url)
             r.raise_for_status()
         soup=BeautifulSoup(r.text,"html.parser")
         for tag in soup(["script","style","noscript"]):
             tag.decompose()
-        text=re.sub(r"\s+"," ",soup.get_text(" ",strip=True))
+        strings=list(soup.stripped_strings)
     except Exception as e:
         raise HTTPException(status_code=502,detail=f"Не удалось получить публичные данные KASE: {e}")
 
-    num=r"([+-]?[0-9][0-9\s\xa0]*[.,][0-9]+)"
-    patterns=[
-        rf"{num}\s*цена последней сделки\s*{num}\s*тренд,\s*KZT\s*{num}\s*тренд,\s*%",
-        rf"{num}\s*last trade price\s*{num}\s*trend,\s*KZT\s*{num}\s*trend,\s*%",
-    ]
-    price=change=change_pct=None
-    for pat in patterns:
-        m=re.search(pat,text,flags=re.I)
-        if m:
-            price=_parse_num(m.group(1)); change=_parse_num(m.group(2)); change_pct=_parse_num(m.group(3)); break
+    # Important: read the value attached to the exact KASE label instead of
+    # running a broad regex across the whole page (which can capture market cap,
+    # share count or turnover and produce absurd prices).
+    price=_value_before_label(strings,["цена последней сделки","price of the last deal","last trade price"])
+    change=_value_before_label(strings,["тренд, KZT","trend, KZT"])
+    change_pct=_value_before_label(strings,["тренд, %","trend, %"])
 
-    if price is None:
-        raise HTTPException(status_code=502,detail=f"Не удалось распознать котировку KASE для {ticker}.")
+    if price is None or price <= 0:
+        raise HTTPException(status_code=502,detail=f"Не удалось распознать последнюю цену KASE для {ticker}.")
 
-    data={"ticker":ticker,"name":NAMES[ticker],"price":price,"change":change,"change_pct":change_pct,"source":"KASE PUBLIC PAGE","fetched_at":now.isoformat(),"url":url,"note":"Публичные данные KASE; это не лицензированный биржевой real-time feed."}
-    live_cache[ticker]={"fetched_at":now,"data":data}; return data
+    data={
+        "ticker":ticker,
+        "name":NAMES[ticker],
+        "price":price,
+        "change":change,
+        "change_pct":change_pct,
+        "source":"KASE PUBLIC PAGE",
+        "fetched_at":now.isoformat(),
+        "url":url,
+        "note":"Последняя опубликованная цена сделки на публичной странице KASE; это не лицензированный биржевой real-time feed."
+    }
+    live_cache[ticker]={"fetched_at":now,"data":data}
+    return data
 
 def load_demo(): return pd.read_csv(DEMO,parse_dates=["date"])
 state["result"]=calculate(load_demo())
+
 @app.get("/")
 def home(): return FileResponse(BASE/"index.html")
+
 @app.get("/api/live/{ticker}")
 async def live(ticker:str): return await fetch_kase_public(ticker)
+
 @app.get("/api/live")
 async def live_many(tickers:str="HSBK,KSPI,KZAP,KMGZ,KCEL,KEGC"):
     items=[]
@@ -132,10 +171,13 @@ async def live_many(tickers:str="HSBK,KSPI,KZAP,KMGZ,KCEL,KEGC"):
         try: items.append(await fetch_kase_public(ticker))
         except HTTPException as e: items.append({"ticker":ticker,"error":e.detail})
     return {"items":items,"fetched_at":datetime.now(timezone.utc).isoformat(),"refresh_seconds":LIVE_TTL,"mode":"KASE_PUBLIC_AUTO_REFRESH"}
+
 @app.get("/api/analysis")
 def analysis(): return {"source":state["source"],"result":state["result"]}
+
 @app.get("/api/health")
 def health(): return {"ok":True,"source":state["source"],"portfolios_generated":N_PORTFOLIOS}
+
 @app.get("/api/portfolios")
 def portfolios(page:int=1,limit:int=25,sort:str="sharpe",direction:str="desc"):
     if state["weights"] is None: raise HTTPException(status_code=503,detail="Портфели ещё не рассчитаны.")
@@ -143,8 +185,12 @@ def portfolios(page:int=1,limit:int=25,sort:str="sharpe",direction:str="desc"):
     rows=[]
     for idx in idxs: rows.append({"id":int(idx)+1,"return":float(m["return"][idx]),"risk":float(m["risk"][idx]),"sharpe":float(m["sharpe"][idx]),"weights":{t:float(x) for t,x in zip(m["assets"],state["weights"][idx])}})
     return {"page":page,"limit":limit,"total":len(m["return"]),"assets":m["assets"],"rows":rows}
+
 @app.post("/api/reset")
-def reset(): state["result"]=calculate(load_demo()); state["source"]="DEMO • 24 месяца • seed=42"; return {"source":state["source"],"result":state["result"]}
+def reset():
+    state["result"]=calculate(load_demo()); state["source"]="DEMO • 24 месяца • seed=42"
+    return {"source":state["source"],"result":state["result"]}
+
 @app.post("/api/upload")
 async def upload(file:UploadFile=File(...)):
     raw=await file.read()
@@ -153,5 +199,7 @@ async def upload(file:UploadFile=File(...)):
         if name.endswith(".csv"): df=pd.read_csv(io.BytesIO(raw))
         elif name.endswith((".xlsx",".xls")): df=pd.read_excel(io.BytesIO(raw))
         else: raise ValueError("Поддерживаются CSV и XLSX.")
-        state["result"]=calculate(normalize(df)); state["source"]=f"USER FILE • {file.filename}"; return {"source":state["source"],"result":state["result"]}
-    except Exception as e: raise HTTPException(status_code=400,detail=str(e))
+        state["result"]=calculate(normalize(df)); state["source"]=f"USER FILE • {file.filename}"
+        return {"source":state["source"],"result":state["result"]}
+    except Exception as e:
+        raise HTTPException(status_code=400,detail=str(e))
