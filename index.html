@@ -516,7 +516,7 @@ async function kvRefreshDashboardQuotes(){
   }catch(e){renderDashboardStocks()}
 }
 function kvSyncUser(){
-  const u=window.kvAuthenticatedUser;const el=document.getElementById('kvDashboardUser');if(el&&u)el.textContent='@'+u.username;
+  const u=(typeof kvAuthenticatedUser!=='undefined'?kvAuthenticatedUser:null);const el=document.getElementById('kvDashboardUser');if(el&&u)el.textContent='@'+u.username;
 }
 setTimeout(()=>{kvSyncUser();loadWorldNews();kvRefreshDashboardQuotes();renderDashboardStocks()},900);
 setInterval(kvRefreshDashboardQuotes,25000);
