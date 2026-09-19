@@ -731,6 +731,70 @@ async def save_preferences(request: Request):
     return {"user": public_user(updated)}
 
 
+NEWS_TTL = 15 * 60
+news_cache = {"fetched_at": None, "items": []}
+
+async def fetch_world_news():
+    now = datetime.now(timezone.utc)
+    cached_at = news_cache.get("fetched_at")
+    if cached_at and (now - cached_at).total_seconds() < NEWS_TTL and news_cache.get("items"):
+        return news_cache["items"]
+
+    # Google News RSS is used only as a public news index. The returned item
+    # links point to the publisher through Google News redirects.
+    feeds = [
+        "https://news.google.com/rss/search?q=global%20stock%20market%20finance&hl=en-US&gl=US&ceid=US:en",
+        "https://news.google.com/rss/search?q=S%26P%20500%20NASDAQ%20markets&hl=en-US&gl=US&ceid=US:en",
+    ]
+    items = []
+    seen = set()
+
+    async with httpx.AsyncClient(
+        timeout=10,
+        follow_redirects=True,
+        headers={"User-Agent": "Mozilla/5.0 KASE-Vision/8.0"},
+    ) as client:
+        for feed_url in feeds:
+            try:
+                response = await client.get(feed_url)
+                response.raise_for_status()
+                root = BeautifulSoup(response.text, "xml")
+                for item in root.find_all("item"):
+                    title = item.find("title")
+                    link = item.find("link")
+                    source = item.find("source")
+                    pub = item.find("pubDate")
+                    if not title or not link:
+                        continue
+                    title_text = title.get_text(" ", strip=True)
+                    key = re.sub(r"\\W+", " ", title_text.lower()).strip()
+                    if not key or key in seen:
+                        continue
+                    seen.add(key)
+                    items.append({
+                        "title": title_text,
+                        "url": link.get_text(strip=True),
+                        "source": source.get_text(" ", strip=True) if source else "News",
+                        "published_at": pub.get_text(" ", strip=True) if pub else None,
+                    })
+            except Exception:
+                continue
+
+    # Prefer recent items when dates are parseable, then cap at five headlines.
+    def news_time(x):
+        try:
+            from email.utils import parsedate_to_datetime
+            return parsedate_to_datetime(x["published_at"]).timestamp()
+        except Exception:
+            return 0
+
+    items.sort(key=news_time, reverse=True)
+    items = items[:5]
+    if items:
+        news_cache["fetched_at"] = now
+        news_cache["items"] = items
+    return items
+
 @app.get("/")
 def home():
     return FileResponse(BASE / "index.html")
