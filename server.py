@@ -767,7 +767,7 @@ async def fetch_world_news():
                     if not title or not link:
                         continue
                     title_text = title.get_text(" ", strip=True)
-                    key = re.sub(r"\\W+", " ", title_text.lower()).strip()
+                    key = re.sub(r"\W+", " ", title_text.lower()).strip()
                     if not key or key in seen:
                         continue
                     seen.add(key)
@@ -794,6 +794,14 @@ async def fetch_world_news():
         news_cache["fetched_at"] = now
         news_cache["items"] = items
     return items
+
+@app.get("/api/news")
+async def api_news():
+    try:
+        items = await fetch_world_news()
+        return {"items": items, "updated_at": news_cache.get("fetched_at").isoformat() if news_cache.get("fetched_at") else None}
+    except Exception:
+        return {"items": [], "updated_at": None}
 
 @app.get("/")
 def home():
