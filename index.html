@@ -10,6 +10,8 @@
 
 body.kv-locked{overflow:hidden}
 body.kv-locked>header,body.kv-locked>main{visibility:hidden}
+body.kv-app-open>header,body.kv-app-open>main{visibility:visible}
+body.kv-app-open{overflow:auto}
 .kv-landing{position:fixed;inset:0;z-index:100;background:
  radial-gradient(circle at 78% 22%,#123b70 0%,transparent 30%),
  radial-gradient(circle at 88% 72%,#082947 0%,transparent 34%),
@@ -180,17 +182,24 @@ document.querySelectorAll('.kv-auth-tab').forEach(x=>x.onclick=()=>openAuth(x.da
 
 function showMain(user){
   document.body.classList.remove('kv-locked');
+  document.body.classList.add('kv-app-open');
   document.getElementById('kvUserName').textContent='@'+user.username;
-  kvLanding.style.transition='opacity .35s ease,transform .35s ease';
-  kvLanding.style.opacity='0';kvLanding.style.transform='scale(1.01)';
-  setTimeout(()=>{if(kvLanding.isConnected)kvLanding.style.display='none'},360);
+  kvLanding.style.transition='opacity .35s ease,visibility .35s ease,transform .35s ease';
+  kvLanding.style.opacity='0';
+  kvLanding.style.visibility='hidden';
+  kvLanding.style.pointerEvents='none';
+  kvLanding.style.transform='scale(1.01)';
   closeAuth();
   window.scrollTo({top:0,behavior:'instant'});
   if(typeof applyUserPreferences==='function')applyUserPreferences(user);else window.kvPendingUser=user;
 }
 function showLanding(){
+  document.body.classList.remove('kv-app-open');
   document.body.classList.add('kv-locked');
-  kvLanding.style.display='block';kvLanding.style.opacity='1';kvLanding.style.transform='none';
+  kvLanding.style.visibility='visible';
+  kvLanding.style.pointerEvents='auto';
+  kvLanding.style.opacity='1';
+  kvLanding.style.transform='none';
   document.getElementById('kvUserName').textContent='';
   window.scrollTo({top:0,behavior:'instant'});
 }
@@ -216,9 +225,8 @@ async function authSubmit(e){
 document.getElementById('authForm').addEventListener('submit',authSubmit);
 
 document.getElementById('logoutKaseVision').onclick=async()=>{
-  await fetch('/api/auth/logout',{method:'POST'});
+  try{await fetch('/api/auth/logout',{method:'POST'});}catch(e){}
   showLanding();
-  openAuth('login');
 };
 
 document.addEventListener('keydown',e=>{
