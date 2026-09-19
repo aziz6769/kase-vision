@@ -181,6 +181,7 @@ authModal.addEventListener('click',e=>{if(e.target===authModal)closeAuth()});
 document.querySelectorAll('.kv-auth-tab').forEach(x=>x.onclick=()=>openAuth(x.dataset.authTab));
 
 function showMain(user){
+  kvAuthenticatedUser=user;
   document.body.classList.remove('kv-locked');
   document.body.classList.add('kv-app-open');
   document.getElementById('kvUserName').textContent='@'+user.username;
@@ -194,6 +195,7 @@ function showMain(user){
   if(typeof applyUserPreferences==='function')applyUserPreferences(user);else window.kvPendingUser=user;
 }
 function showLanding(){
+  kvAuthenticatedUser=null;
   document.body.classList.remove('kv-app-open');
   document.body.classList.add('kv-locked');
   kvLanding.style.visibility='visible';
@@ -231,6 +233,27 @@ document.getElementById('logoutKaseVision').onclick=async()=>{
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeMarkowitz();closeAuth()}
+});
+
+// Keep browser Back navigation from clearing the authenticated UI.
+let kvAuthenticatedUser=null;
+function syncAppHistory(){
+  try{ history.replaceState({kv:'app',authenticated:true},'',location.href); }catch(e){}
+}
+window.addEventListener('popstate',async()=>{
+  try{
+    const res=await fetch('/api/auth/me',{cache:'no-store'});
+    const data=await res.json();
+    if(data.authenticated){
+      kvAuthenticatedUser=data.user;
+      showMain(data.user);
+      syncAppHistory();
+    }else{
+      showLanding();
+    }
+  }catch(e){
+    if(kvAuthenticatedUser) showMain(kvAuthenticatedUser);
+  }
 });
 
 async function restoreSession(){
