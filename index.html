@@ -6,9 +6,89 @@
 <title>KASE Vision — Markowitz Research</title>
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--text:#111318;--muted:#69707d;--line:#e1e4e9;--blue:#0a66c2;--green:#087f5b;--red:#c92a2a;--amber:#b76e00;--purple:#6f42c1}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}header{position:sticky;top:0;z-index:10;background:#fffffff2;backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}nav{max-width:1240px;height:58px;margin:auto;display:flex;align-items:center;gap:24px;padding:0 20px}nav b{font-size:18px;margin-right:auto}nav a{color:#343a40;text-decoration:none;font-size:13px}.wrap{max-width:1240px;margin:auto;padding:34px 20px 70px}.hero{padding:26px 0 24px}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--blue)}.hero h1{font-size:48px;line-height:1.04;letter-spacing:-.04em;margin:10px 0 12px;max-width:980px}.hero p{font-size:18px;line-height:1.45;color:var(--muted);max-width:880px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 2px 12px #00000008}h2{font-size:25px;letter-spacing:-.025em;margin:0 0 5px}h3{margin:0 0 8px}.sub,.muted{color:var(--muted)}.badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eef4ff;color:#145dbf;font-size:12px;font-weight:700}.live{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:14px}.quote{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fafbfc;min-width:0}.ticker{font-weight:800}.price{font-size:18px;font-weight:760;margin-top:7px;overflow-wrap:anywhere}.up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--muted)}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}.stat .value{font-size:28px;font-weight:800;margin-top:7px}.profiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:15px}.profile{border:1px solid var(--line);border-radius:16px;padding:17px;background:#fff;cursor:pointer;transition:.15s}.profile:hover{transform:translateY(-1px);box-shadow:0 6px 20px #0000000c}.profile.active{border-color:#111;box-shadow:0 0 0 2px #1111}.profile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.profile h3{font-size:18px}.mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:13px}.mini{background:#f7f8fa;border-radius:11px;padding:10px}.mini b{display:block;font-size:17px;margin-top:3px}.weights{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.chip{padding:6px 8px;background:#f0f2f5;border-radius:9px;font-size:12px}.decision{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.callout{background:#f7f8fa;border-radius:14px;padding:16px}.callout strong{font-size:17px}.lead-list{margin:10px 0 0;padding-left:18px;line-height:1.7}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:13px 0}input,select,button{font:inherit;border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px 11px}input[type=number]{width:190px}button{cursor:pointer;font-weight:650}button.primary{background:#111;color:#fff;border-color:#111}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}.table-wrap{overflow:auto}canvas{width:100%;height:350px;border:1px solid var(--line);border-radius:14px;background:#fff}.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:9px}.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.notice{border-left:4px solid var(--amber);background:#fff8e8;border-radius:10px;padding:12px 14px;color:#5d4a21}.good{border-left-color:var(--green);background:#eefaf5;color:#285b49}details summary{cursor:pointer;font-weight:750;font-size:16px;padding:3px 0}.footer{text-align:center;color:#858b95;font-size:12px;margin-top:35px;line-height:1.6}.small{font-size:12px}.kzt{font-variant-numeric:tabular-nums}@media(max-width:980px){.live{grid-template-columns:repeat(3,1fr)}.profiles,.stats{grid-template-columns:repeat(2,1fr)}.decision,.two{grid-template-columns:1fr}.hero h1{font-size:40px}}@media(max-width:620px){nav a{display:none}.wrap{padding-left:13px;padding-right:13px}.hero h1{font-size:34px}.live,.profiles,.stats{grid-template-columns:1fr 1fr}.mini-grid{grid-template-columns:1fr}.price{font-size:16px}}
+
+<style id="kase-vision-landing">
+body.kv-locked{overflow:hidden}
+body.kv-locked>header,body.kv-locked>main{visibility:hidden}
+.kv-landing{position:fixed;inset:0;z-index:100;background:
+ radial-gradient(circle at 78% 22%,#123b70 0%,transparent 30%),
+ radial-gradient(circle at 88% 72%,#082947 0%,transparent 34%),
+ linear-gradient(115deg,#03070d 0%,#07111d 46%,#071a31 100%);
+ color:#fff;overflow:hidden}
+.kv-landing:before{content:"";position:absolute;inset:0;background:
+ linear-gradient(90deg,rgba(3,7,13,.98) 0%,rgba(3,7,13,.92) 37%,rgba(3,7,13,.38) 68%,rgba(3,7,13,.16) 100%),
+ radial-gradient(ellipse at 78% 80%,rgba(0,113,227,.20),transparent 48%)}
+.kv-grid{position:absolute;inset:0;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:64px 64px;mask-image:linear-gradient(to right,transparent,black 45%,transparent)}
+.kv-landing-nav{position:relative;z-index:2;height:78px;display:flex;align-items:center;justify-content:space-between;padding:0 5.5vw}
+.kv-brand{font-size:22px;letter-spacing:.18em;font-weight:700}.kv-brand span{font-weight:300;color:#aebed3}
+.kv-status{display:flex;gap:22px;align-items:center;color:#b9c7d8;font-size:12px;letter-spacing:.04em}.kv-dot{width:7px;height:7px;border-radius:50%;background:#35d399;display:inline-block;margin-right:7px;box-shadow:0 0 12px #35d399}
+.kv-hero{position:relative;z-index:2;max-width:1250px;height:calc(100vh - 78px);margin:auto;padding:13vh 5.5vw 0;display:flex;align-items:flex-start}
+.kv-copy{max-width:650px}.kv-eyebrow{font-size:12px;letter-spacing:.20em;text-transform:uppercase;color:#8fa7c5;margin-bottom:24px}.kv-eyebrow:before{content:"";display:inline-block;width:46px;height:1px;background:#88a4c5;vertical-align:middle;margin-right:18px}
+.kv-copy h1{font-size:clamp(58px,6vw,94px);line-height:.95;letter-spacing:-.055em;margin:0 0 24px;font-weight:700}.kv-copy h1 span{font-weight:300;color:#cbd8ea}
+.kv-copy p{font-size:21px;line-height:1.48;color:#b8c6d9;max-width:610px;margin:0 0 34px}
+.kv-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.kv-btn{border:1px solid #35506f;border-radius:10px;padding:15px 24px;color:#fff;background:rgba(10,25,43,.65);font-size:15px;cursor:pointer;backdrop-filter:blur(10px);transition:.18s}.kv-btn:hover{transform:translateY(-1px);border-color:#5c7fa5}.kv-btn-primary{background:#086cf0;border-color:#086cf0;box-shadow:0 10px 30px rgba(0,102,255,.25)}.kv-btn-primary:hover{background:#1678f7}
+.kv-markowitz-link{display:inline-flex;align-items:center;gap:10px;margin-top:18px;color:#dbe8f8;background:transparent;border:0;padding:8px 0;font-size:14px;cursor:pointer}.kv-info{width:22px;height:22px;border:1px solid #5796da;border-radius:50%;display:grid;place-items:center;color:#65adff;font-weight:700}
+.kv-features{display:grid;grid-template-columns:repeat(3,180px);gap:0;margin-top:90px}.kv-feature{padding-right:25px;margin-right:25px;border-right:1px solid rgba(140,170,205,.25)}.kv-feature:last-child{border:0}.kv-feature b{display:block;font-size:14px;margin-top:10px}.kv-feature span{font-size:12px;color:#7f95b0}.kv-icon{font-size:22px;color:#72a9df}
+.kv-modal-backdrop{position:fixed;inset:0;z-index:120;background:rgba(1,5,10,.72);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:24px}.kv-modal-backdrop.open{display:flex}
+.kv-modal{width:min(720px,100%);max-height:min(88vh,820px);overflow:auto;background:linear-gradient(145deg,#071522,#06101b);border:1px solid #315271;border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.55);padding:30px;color:#edf5ff;position:relative}.kv-modal h2{font-size:25px;margin:0 40px 10px 0;color:#fff}.kv-modal p{color:#b9c8d9;line-height:1.65;margin:9px 0}.kv-modal h3{font-size:16px;margin:22px 0 7px;color:#fff}.kv-close{position:absolute;right:20px;top:18px;border:0;background:transparent;color:#9fb2c9;font-size:27px;cursor:pointer}.kv-formula{margin:18px 0;padding:18px 14px;border:1px solid #294b6c;border-radius:12px;background:#06192a;text-align:center;font-family:Georgia,serif;font-size:23px;color:#f3f7fd;overflow:auto}.kv-defs{display:grid;grid-template-columns:80px 1fr;gap:8px 14px;font-size:13px;color:#b9c8d9}.kv-defs b{color:#fff}.kv-modal-foot{display:flex;justify-content:flex-end;margin-top:24px}.kv-ok{border:1px solid #0a66c2;background:#086cf0;color:#fff;border-radius:9px;padding:10px 22px;cursor:pointer}
+@media(max-width:800px){.kv-hero{padding-top:9vh}.kv-copy h1{font-size:58px}.kv-copy p{font-size:18px}.kv-features{margin-top:55px;grid-template-columns:repeat(3,1fr)}.kv-feature{padding-right:12px;margin-right:12px}}
+@media(max-width:560px){.kv-status span:not(.kv-dot){display:none}.kv-hero{padding:7vh 7vw}.kv-copy h1{font-size:48px}.kv-features{grid-template-columns:1fr;gap:16px;margin-top:45px}.kv-feature{border:0!important;margin:0;padding:0}.kv-feature:nth-child(n+2){display:none}.kv-modal{padding:24px}.kv-formula{font-size:18px}}
+</style>
 </style>
 </head>
-<body>
+<body class="kv-locked">
+
+<section id="landing" class="kv-landing">
+  <div class="kv-grid"></div>
+  <div class="kv-landing-nav">
+    <div class="kv-brand">KASE <span>VISION</span></div>
+    <div class="kv-status"><span><i class="kv-dot"></i>KASE PUBLIC DATA</span><span>RU⌄</span></div>
+  </div>
+  <div class="kv-hero">
+    <div class="kv-copy">
+      <div class="kv-eyebrow">Исследовательская платформа</div>
+      <h1>KASE <span>VISION</span></h1>
+      <p>Аналитика казахстанского фондового рынка</p>
+      <div class="kv-actions">
+        <button class="kv-btn kv-btn-primary" id="enterKaseVision">Войти в KASE Vision&nbsp; →</button>
+      </div>
+      <button class="kv-markowitz-link" id="openMarkowitz">
+        <span class="kv-info">i</span>
+        <span>Что такое модель Марковица?</span>
+        <span>›</span>
+      </button>
+      <div class="kv-features">
+        <div class="kv-feature"><div class="kv-icon">▥</div><b>Рынок</b><span>6 акций KASE</span></div>
+        <div class="kv-feature"><div class="kv-icon">◔</div><b>Портфели</b><span>60 000 комбинаций</span></div>
+        <div class="kv-feature"><div class="kv-icon">⌁</div><b>Исследования</b><span>Данные и аналитика</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="markowitzModal" class="kv-modal-backdrop" aria-hidden="true">
+  <div class="kv-modal" role="dialog" aria-modal="true" aria-labelledby="markowitzTitle">
+    <button class="kv-close" id="closeMarkowitz" aria-label="Закрыть">×</button>
+    <h2 id="markowitzTitle">Что такое модель Марковица?</h2>
+    <p><b>Модель Марковица</b> — классическая математическая модель портфельного анализа, предложенная Гарри Марковицем. Она рассматривает портфель не как набор отдельных акций, а как единую систему, где важны одновременно ожидаемая доходность, риск и взаимосвязь активов.</p>
+    <h3>Основная идея</h3>
+    <p>Для каждого актива оценивается ожидаемая доходность, а риск портфеля определяется не только колебаниями отдельных акций, но и их ковариациями. Поэтому комбинация нескольких активов может иметь другой уровень риска, чем простое среднее их индивидуальных рисков.</p>
+    <h3>Формула минимизации риска</h3>
+    <p>В классической постановке ищется набор весов, который минимизирует дисперсию портфеля при заданной целевой доходности:</p>
+    <div class="kv-formula">min<sub>w</sub> &nbsp; w<sup>T</sup>Σw &nbsp;&nbsp; при условиях &nbsp; w<sup>T</sup>μ = μ<sub>p</sub>, &nbsp; Σw<sub>i</sub> = 1, &nbsp; w<sub>i</sub> ≥ 0</div>
+    <div class="kv-defs">
+      <b>w</b><span>вектор весов активов в портфеле;</span>
+      <b>Σ</b><span>ковариационная матрица доходностей;</span>
+      <b>μ</b><span>вектор ожидаемых доходностей активов;</span>
+      <b>μ<sub>p</sub></b><span>целевая ожидаемая доходность портфеля;</span>
+      <b>w<sup>T</sup>Σw</b><span>дисперсия портфеля — мера его модельного риска.</span>
+    </div>
+    <h3>Как это используется в KASE Vision</h3>
+    <p>Платформа рассчитывает месячные доходности шести выбранных акций KASE, оценивает их средние доходности и ковариации, а затем исследует 60 000 допустимых long-only комбинаций. Для каждой комбинации рассчитываются доходность, риск и Sharpe ratio. На экране выделяются портфели с минимальным риском, максимальным Sharpe и равными весами.</p>
+    <p class="small" style="color:#8095ad">Это исследовательская модель на исторических данных. Она не гарантирует будущую доходность и не является персональной инвестиционной рекомендацией.</p>
+    <div class="kv-modal-foot"><button class="kv-ok" id="okMarkowitz">Понятно</button></div>
+  </div>
+</div>
 <header><nav><b>KASE Vision</b><a href="#market">Рынок</a><a href="#decision">Решение</a><a href="#allocation">Бюджет</a><a href="#research">Исследование</a><a href="#tech">Метод</a></nav></header>
 <main class="wrap">
 <section class="hero"><div class="eyebrow">Markowitz Research • KASE • v7</div><h1>Не просто 60 000 процентов — конкретные комбинации акций.</h1><p>Модель использует официально опубликованные месячные цены KASE, оценивает доходность, риск и совместное движение шести акций и показывает три практических исследовательских портфеля. Результаты исторические и модельные — не гарантия будущей прибыли.</p></section>
@@ -24,6 +104,26 @@
 <section class="card"><h2>Данные и ограничения исследования</h2><div class="notice">Выборка: официальные месячные обзоры KASE, февраль 2025 — август 2026, поле «Цена последней сделки». Дивиденды, комиссии, налоги, спред и ликвидность не включены. Публичная текущая цена не является лицензированным tick-by-tick feed.</div><div class="two" style="margin-top:12px"><div class="callout"><strong>Стабилизация модели</strong><div class="small muted" style="margin-top:5px">Оценки доходности сжимаются на 35% к среднему по акциям; ковариация — на 15% к диагонали; максимальная доля одной акции — 35%.</div></div><div class="callout"><strong>Безрисковая ставка</strong><div class="small muted" style="margin-top:5px">Для сравнения Sharpe используется Rf = 8% годовых как параметр исследовательской модели.</div></div></div></section>
 <div class="footer">KASE Vision • исследовательская модель Марковица • не является персональной инвестиционной рекомендацией и не гарантирует будущую доходность.</div>
 </main>
+
+<script id="kase-vision-landing-js">
+document.body.classList.add('kv-locked');
+const kvLanding=document.getElementById('landing');
+const kvModal=document.getElementById('markowitzModal');
+function openMarkowitz(){kvModal.classList.add('open');kvModal.setAttribute('aria-hidden','false')}
+function closeMarkowitz(){kvModal.classList.remove('open');kvModal.setAttribute('aria-hidden','true')}
+document.getElementById('openMarkowitz').onclick=openMarkowitz;
+document.getElementById('closeMarkowitz').onclick=closeMarkowitz;
+document.getElementById('okMarkowitz').onclick=closeMarkowitz;
+kvModal.addEventListener('click',e=>{if(e.target===kvModal)closeMarkowitz()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMarkowitz()});
+document.getElementById('enterKaseVision').onclick=()=>{
+  document.body.classList.remove('kv-locked');
+  kvLanding.style.transition='opacity .35s ease,transform .35s ease';
+  kvLanding.style.opacity='0';kvLanding.style.transform='scale(1.01)';
+  setTimeout(()=>kvLanding.remove(),360);
+  window.scrollTo({top:0,behavior:'instant'});
+};
+</script>
 <script>
 let D=null,selected='balanced',page=1,variantsLoaded=false;const colors=['#0a66c2','#f08c00','#2b8a3e','#d94841','#6f42c1','#795548'];const $=id=>document.getElementById(id);const pct=(x,d=2)=>x==null?'—':(Number(x)*100).toFixed(d)+'%';const money=x=>x==null?'—':Number(x).toLocaleString('ru-RU',{maximumFractionDigits:2});const profileColor={min_risk:'#0a66c2',balanced:'#b76e00',max_sharpe:'#087f5b',equal:'#6f42c1'};
 function setup(canvas,h=350){const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=r.width*d;canvas.height=h*d;const c=canvas.getContext('2d');c.scale(d,d);return[c,r.width,h]}
