@@ -6,14 +6,18 @@ import io
 import os
 import re
 from datetime import datetime, timezone
+import hashlib
+import hmac
+import secrets
+import sqlite3
 
 import httpx
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 try:
     from scipy.optimize import minimize
@@ -22,6 +26,7 @@ except Exception:
     SCIPY_OK = False
 
 BASE = Path(__file__).resolve().parent
+DB_PATH = Path(os.getenv("KASE_VISION_DB", str(BASE / "kase_vision.db")))
 REAL_DATA = BASE / "data" / "kase_monthly_real.csv"
 DEMO = BASE / "data" / "demo_prices.csv"
 
@@ -65,6 +70,88 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Lightweight account system
+# Passwords are stored as salted PBKDF2 hashes, never as plaintext.
+# SQLite keeps accounts and user preferences between application restarts.
+# ---------------------------------------------------------------------------
+def db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = db()
+    conn.executescript("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        selected_profile TEXT NOT NULL DEFAULT 'balanced',
+        budget REAL NOT NULL DEFAULT 1000000
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    """)
+    conn.commit()
+    conn.close()
+
+
+def password_hash(password: str, salt: bytes) -> str:
+    return hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt, 240_000
+    ).hex()
+
+
+def validate_credentials(username: str, password: str):
+    username = username.strip()
+    if not re.fullmatch(r"[A-Za-zА-Яа-яЁё0-9_.-]{3,32}", username):
+        raise HTTPException(
+            status_code=400,
+            detail="Логин: 3–32 символа, только буквы, цифры, _, ., -.",
+        )
+    if len(password) < 6 or len(password) > 128:
+        raise HTTPException(
+            status_code=400,
+            detail="Пароль должен содержать от 6 до 128 символов.",
+        )
+    return username
+
+
+def current_user(request):
+    token = request.cookies.get("kv_session")
+    if not token:
+        return None
+    conn = db()
+    row = conn.execute(
+        """SELECT u.id,u.username,u.selected_profile,u.budget
+           FROM sessions s JOIN users u ON u.id=s.user_id
+           WHERE s.token=?""",
+        (token,),
+    ).fetchone()
+    conn.close()
+    return row
+
+
+def public_user(row):
+    return {
+        "id": int(row["id"]),
+        "username": row["username"],
+        "selected_profile": row["selected_profile"],
+        "budget": float(row["budget"]),
+    }
+
+
+init_db()
 
 state = {
     "source": "",
@@ -514,6 +601,134 @@ state["source"] = (
     if REAL_DATA.exists()
     else "DEMO • 24 месяца • seed=42"
 )
+
+
+
+@app.post("/api/auth/register")
+async def register(request: Request):
+    body = await request.json()
+    username = validate_credentials(str(body.get("username", "")), str(body.get("password", "")))
+    password = str(body.get("password", ""))
+
+    salt = secrets.token_bytes(16)
+    hashed = password_hash(password, salt)
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc).isoformat()
+
+    conn = db()
+    try:
+        cur = conn.execute(
+            """INSERT INTO users(username,password_hash,salt,created_at)
+               VALUES(?,?,?,?)""",
+            (username, hashed, salt.hex(), now),
+        )
+        user_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO sessions(token,user_id,created_at) VALUES(?,?,?)",
+            (token, user_id, now),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id,username,selected_profile,budget FROM users WHERE id=?",
+            (user_id,),
+        ).fetchone()
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        raise HTTPException(status_code=409, detail="Такой логин уже зарегистрирован.")
+    finally:
+        conn.close()
+
+    response = JSONResponse({"user": public_user(row)})
+    response.set_cookie(
+        "kv_session", token, httponly=True, samesite="lax",
+        secure=os.getenv("COOKIE_SECURE", "0") == "1",
+        max_age=60 * 60 * 24 * 30,
+    )
+    return response
+
+
+@app.post("/api/auth/login")
+async def login(request: Request):
+    body = await request.json()
+    username = str(body.get("username", "")).strip()
+    password = str(body.get("password", ""))
+    conn = db()
+    row = conn.execute(
+        "SELECT id,username,password_hash,salt,selected_profile,budget FROM users WHERE username=?",
+        (username,),
+    ).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль.")
+
+    candidate = password_hash(password, bytes.fromhex(row["salt"]))
+    if not hmac.compare_digest(candidate, row["password_hash"]):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль.")
+
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute("INSERT INTO sessions(token,user_id,created_at) VALUES(?,?,?)", (token, row["id"], now))
+    conn.commit()
+    user = conn.execute(
+        "SELECT id,username,selected_profile,budget FROM users WHERE id=?",
+        (row["id"],),
+    ).fetchone()
+    conn.close()
+
+    response = JSONResponse({"user": public_user(user)})
+    response.set_cookie(
+        "kv_session", token, httponly=True, samesite="lax",
+        secure=os.getenv("COOKIE_SECURE", "0") == "1",
+        max_age=60 * 60 * 24 * 30,
+    )
+    return response
+
+
+@app.post("/api/auth/logout")
+def logout(request: Request):
+    token = request.cookies.get("kv_session")
+    if token:
+        conn = db()
+        conn.execute("DELETE FROM sessions WHERE token=?", (token,))
+        conn.commit()
+        conn.close()
+    response = JSONResponse({"ok": True})
+    response.delete_cookie("kv_session")
+    return response
+
+
+@app.get("/api/auth/me")
+def me(request: Request):
+    row = current_user(request)
+    return {"authenticated": row is not None, "user": public_user(row) if row else None}
+
+
+@app.put("/api/user/preferences")
+async def save_preferences(request: Request):
+    row = current_user(request)
+    if not row:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт.")
+    body = await request.json()
+    profile = str(body.get("selected_profile", "balanced"))
+    budget = float(body.get("budget", 1_000_000))
+    if profile not in ("min_risk", "balanced", "max_sharpe", "equal"):
+        raise HTTPException(status_code=400, detail="Неизвестный профиль.")
+    if not np.isfinite(budget) or budget <= 0:
+        raise HTTPException(status_code=400, detail="Бюджет должен быть больше нуля.")
+
+    conn = db()
+    conn.execute(
+        "UPDATE users SET selected_profile=?, budget=? WHERE id=?",
+        (profile, budget, row["id"]),
+    )
+    conn.commit()
+    updated = conn.execute(
+        "SELECT id,username,selected_profile,budget FROM users WHERE id=?",
+        (row["id"],),
+    ).fetchone()
+    conn.close()
+    return {"user": public_user(updated)}
 
 
 @app.get("/")
