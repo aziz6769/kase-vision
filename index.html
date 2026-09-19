@@ -118,6 +118,10 @@ canvas{background:#061522;border-color:#183852}
 .kv-close-dark{position:absolute;right:17px;top:12px;border:0;background:transparent;color:#8ea8c1;font-size:26px}
 @media(max-width:1000px){nav{padding-left:20px}.wrap{padding-left:20px}.kv-sidebar{display:none}.kv-dashboard-grid{grid-template-columns:1fr}.kv-market-strip{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){nav{height:58px;padding:0 13px}.wrap{padding:18px 13px 50px}.kv-dashboard-title{font-size:25px}.kv-dashboard-grid{grid-template-columns:1fr}.kv-market-strip{grid-template-columns:1fr 1fr}.kv-detail-stats{grid-template-columns:1fr 1fr}.kv-all-row{grid-template-columns:34px 1fr auto}.kv-all-row .kv-all-extra{display:none}}
+
+body.kv-home-mode main>section:not(#dashboard){display:none!important}
+body.kv-section-mode #dashboard{display:none!important}
+body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-side-link[data-side="dashboard"]{ }
 </style>
 </head>
 <body class="kv-locked">
@@ -548,5 +552,30 @@ function kvSyncUser(){
   const u=(typeof kvAuthenticatedUser!=='undefined'?kvAuthenticatedUser:null);const el=document.getElementById('kvDashboardUser');if(el&&u)el.textContent='@'+u.username;
 }
 setTimeout(()=>{kvSyncUser();if(appStarted){loadWorldNews();kvRefreshDashboardQuotes()}},900);
+</script><script id="kase-vision-home-routing">
+(function(){
+  function kvShowSection(target){
+    if(!target || target==='#dashboard'){
+      document.body.classList.add('kv-home-mode');document.body.classList.remove('kv-section-mode');
+      document.querySelectorAll('.kv-side-link[data-side]').forEach(x=>x.classList.toggle('active',x.dataset.side==='dashboard'));
+      window.scrollTo({top:0,behavior:'smooth'});return;
+    }
+    document.body.classList.remove('kv-home-mode');document.body.classList.add('kv-section-mode');
+    document.querySelectorAll('.kv-side-link[data-side]').forEach(x=>x.classList.toggle('active',x.dataset.side===target.replace('#','')));
+    const el=document.querySelector(target);if(el){el.style.display='';el.scrollIntoView({behavior:'smooth',block:'start'})}
+  }
+  function kvInitHome(){
+    document.body.classList.add('kv-home-mode');
+    document.querySelectorAll('header a[href^="#"], .kv-sidebar a[href^="#"]').forEach(a=>{
+      a.addEventListener('click',e=>{
+        const href=a.getAttribute('href');
+        if(!href)return;
+        e.preventDefault();history.pushState({kvSection:href},'',href);kvShowSection(href);
+      });
+    });
+    window.addEventListener('popstate',()=>kvShowSection(location.hash||'#dashboard'));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kvInitHome);else kvInitHome();
+})();
 </script></body>
 </html>
