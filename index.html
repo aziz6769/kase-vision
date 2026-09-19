@@ -439,6 +439,7 @@ window.onresize=()=>{
     if(typeof drawStockDetail==='function' && document.getElementById('stockDetailModal')?.classList.contains('open'))drawStockDetail(kvDetailTicker,kvDetailRange);
   });
 };
+if(typeof kvAuthenticatedUser!=='undefined' && kvAuthenticatedUser)startKaseVisionApp();
 </script>
 
 <script id="kase-vision-user-prefs">
