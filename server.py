@@ -758,7 +758,7 @@ async def fetch_world_news():
             try:
                 response = await client.get(feed_url)
                 response.raise_for_status()
-                root = BeautifulSoup(response.text, "xml")
+                root = BeautifulSoup(response.text, "html.parser")
                 for item in root.find_all("item"):
                     title = item.find("title")
                     link = item.find("link")
