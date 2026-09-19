@@ -309,6 +309,7 @@ document.querySelectorAll('.kv-auth-tab').forEach(x=>x.onclick=()=>openAuth(x.da
 
 function showMain(user){
   kvAuthenticatedUser=user;
+  if(typeof startKaseVisionApp==='function')startKaseVisionApp();
   document.body.classList.remove('kv-locked');
   document.body.classList.add('kv-app-open');
   document.getElementById('kvUserName').textContent='@'+user.username;
@@ -355,6 +356,7 @@ document.getElementById('authForm').addEventListener('submit',authSubmit);
 
 document.getElementById('logoutKaseVision').onclick=async()=>{
   try{await fetch('/api/auth/logout',{method:'POST'});}catch(e){}
+  if(typeof stopKaseVisionApp==='function')stopKaseVisionApp();
   showLanding();
 };
 
@@ -402,10 +404,41 @@ function renderSelected(){const r=D.result,p=r.profiles[selected],st=r.asset_sta
 function renderAssetStats(){const r=D.result,a=r.period.assets;$('assetStats').innerHTML='<tr><th>Акция</th><th>Доходность/год*</th><th>Риск σ</th><th>За весь период</th></tr>'+a.map(t=>{const s=r.asset_stats[t];return `<tr><td><b>${t}</b><div class="muted small">${s.name}</div></td><td class="${s.annual_return_raw>=0?'up':'down'}">${pct(s.annual_return_raw)}</td><td>${pct(s.annual_risk)}</td><td class="${s.sample_return>=0?'up':'down'}">${pct(s.sample_return)}</td></tr>`}).join('')+'<tr><td colspan="4" class="muted small" style="text-align:left">* Историческая арифметическая годовая оценка; не прогноз и не обещание будущей доходности.</td></tr>'}
 function render(){const r=D.result,p=r.period;$('period').textContent=p.start+' — '+p.end;$('months').textContent=p.months+' месячных цен';$('obs').textContent=p.return_observations;$('cap').textContent=pct(r.max_weight,0);renderProfiles();renderSelected();renderAssetStats();scatter();lineChart('priceChart',r.normalized.map(s=>({values:s.values})));$('priceLegend').innerHTML=r.normalized.map((s,i)=>`<span><i style="--c:${colors[i]}"></i>${s.ticker}</span>`).join('')}
 function liveNum(x){return x==null?'—':Number(x).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}function livePct(x){return x==null?'—':(x>=0?'+':'')+Number(x).toFixed(2)+'%'}
-async function refreshLive(){try{const res=await fetch('/api/live?tickers=HSBK,KSPI,KZAP,KMGZ,KCEL,KEGC'),j=await res.json();$('live').innerHTML=(j.items||[]).map(x=>x.error?`<div class="quote"><div class="ticker">${x.ticker}</div><div class="muted">нет данных</div></div>`:`<div class="quote"><div class="ticker">${x.ticker}</div><div class="price">${liveNum(x.price)} KZT</div><div class="${x.change_pct>0?'up':x.change_pct<0?'down':'neutral'}">${livePct(x.change_pct)}</div></div>`).join('');$('liveTime').textContent='Последняя проверка: '+new Date(j.fetched_at).toLocaleTimeString('ru-RU')+' • значение меняется только при новой опубликованной цене KASE'}catch(e){$('liveTime').textContent='Нет соединения с публичными страницами KASE'}}
+async function refreshLive(){try{const res=await fetch('/api/live?tickers=HSBK,KSPI,KZAP,KMGZ,KCEL,KEGC',{cache:'no-store'}),j=await res.json();window.kvQuotes={};(j.items||[]).forEach(x=>{if(!x.error)window.kvQuotes[x.ticker]=x});if(typeof renderDashboardStocks==='function')renderDashboardStocks();$('live').innerHTML=(j.items||[]).map(x=>x.error?`<div class="quote"><div class="ticker">${x.ticker}</div><div class="muted">нет данных</div></div>`:`<div class="quote"><div class="ticker">${x.ticker}</div><div class="price">${liveNum(x.price)} KZT</div><div class="${x.change_pct>0?'up':x.change_pct<0?'down':'neutral'}">${livePct(x.change_pct)}</div></div>`).join('');$('liveTime').textContent='Последняя проверка: '+new Date(j.fetched_at).toLocaleTimeString('ru-RU')+' • значение меняется только при новой опубликованной цене KASE'}catch(e){$('liveTime').textContent='Нет соединения с публичными страницами KASE'}}
 async function loadAllocation(){if(!D)return;const budget=Math.max(1,Number($('budget').value)||1000000);$('allocStatus').textContent='получаю последние цены…';try{const res=await fetch(`/api/recommendations?budget=${encodeURIComponent(budget)}&profile=${encodeURIComponent(selected)}`);const j=await res.json();if(!res.ok)throw new Error(j.detail||'Ошибка');$('allocationTable').innerHTML='<tr><th>Акция</th><th>Вес</th><th>Цена KZT</th><th>Целевая сумма</th><th>≈ акций</th><th>Факт. сумма</th></tr>'+j.rows.map(x=>`<tr><td><b>${x.ticker}</b><div class="muted small">${x.price_source.includes('latest')?'последняя KASE':'месячная fallback'}</div></td><td>${pct(x.weight,1)}</td><td class="kzt">${money(x.price)}</td><td class="kzt">${money(x.target_kzt)}</td><td>${x.shares}</td><td class="kzt">${money(x.actual_kzt)}</td></tr>`).join('');$('cashInfo').textContent=`Профиль: ${j.label}. Инвестировано ≈ ${money(j.invested)} KZT; остаток из-за округления ≈ ${money(j.cash_residual)} KZT. Лоты, комиссии, налоги, спред и ликвидность не учтены.`;$('allocStatus').textContent='готово'}catch(e){$('allocStatus').textContent='ошибка расчёта: '+e.message}}
 async function loadVariants(p=1){page=Math.max(1,p);const res=await fetch(`/api/portfolios?page=${page}&limit=20&sort=${$('sort').value}&direction=${$('dir').value}`),j=await res.json();$('variants').innerHTML='<tr><th>#</th><th>Доходность</th><th>Риск</th><th>Sharpe</th>'+j.assets.map(t=>`<th>${t}</th>`).join('')+'</tr>'+j.rows.map(x=>`<tr><td>${x.id}</td><td>${pct(x.return)}</td><td>${pct(x.risk)}</td><td>${x.sharpe.toFixed(2)}</td>`+j.assets.map(t=>`<td>${pct(x.weights[t],1)}</td>`).join('')+'</tr>').join('');const pages=Math.ceil(j.total/j.limit);$('pageInfo').textContent=`Страница ${j.page} из ${pages} • ${j.total.toLocaleString('ru-RU')} комбинаций`;$('prev').disabled=page<=1;$('next').disabled=page>=pages;variantsLoaded=true}
-$('calcBudget').onclick=async()=>{await loadAllocation();await saveUserPreferences()};$('refreshVariants').onclick=()=>loadVariants(1);$('prev').onclick=()=>loadVariants(page-1);$('next').onclick=()=>loadVariants(page+1);$('technicalDetails').addEventListener('toggle',e=>{if(e.target.open&&!variantsLoaded)loadVariants(1)});async function boot(){const res=await fetch('/api/analysis');D=await res.json();render();refreshLive();loadAllocation()}boot();setInterval(refreshLive,25000);window.onresize=()=>{if(D){scatter();lineChart('priceChart',D.result.normalized.map(s=>({values:s.values})))}};
+$('calcBudget').onclick=async()=>{await loadAllocation();await saveUserPreferences()};$('refreshVariants').onclick=()=>loadVariants(1);$('prev').onclick=()=>loadVariants(page-1);$('next').onclick=()=>loadVariants(page+1);$('technicalDetails').addEventListener('toggle',e=>{if(e.target.open&&!variantsLoaded)loadVariants(1)});let appStarted=false,liveTimer=null,resizeFrame=0;
+async function startKaseVisionApp(){
+  if(appStarted)return;
+  appStarted=true;
+  try{
+    const res=await fetch('/api/analysis',{cache:'force-cache'});
+    if(!res.ok)throw new Error('analysis');
+    D=await res.json();
+    render();
+    await refreshLive();
+    await loadAllocation();
+    if(!liveTimer)liveTimer=setInterval(refreshLive,25000);
+    if(typeof loadWorldNews==='function')loadWorldNews();
+    if(typeof renderDashboardStocks==='function')renderDashboardStocks();
+  }catch(e){
+    appStarted=false;
+    console.error('KASE Vision startup failed',e);
+  }
+}
+function stopKaseVisionApp(){
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null}
+  appStarted=false;
+}
+window.onresize=()=>{
+  if(!D||resizeFrame)return;
+  resizeFrame=requestAnimationFrame(()=>{
+    resizeFrame=0;
+    scatter();
+    lineChart('priceChart',D.result.normalized.map(s=>({values:s.values})));
+    if(typeof drawStockDetail==='function' && document.getElementById('stockDetailModal')?.classList.contains('open'))drawStockDetail(kvDetailTicker,kvDetailRange);
+  });
+};
 </script>
 
 <script id="kase-vision-user-prefs">
@@ -505,21 +538,14 @@ document.querySelectorAll('.kv-chart-tab').forEach(b=>b.onclick=()=>{document.qu
 ['stocksModal','stockDetailModal'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)kvCloseModal(id)}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){kvCloseModal('stocksModal');kvCloseModal('stockDetailModal')}});
 
-const oldRefreshLive=window.refreshLive;
-window.kvQuotes={};
-async function kvRefreshDashboardQuotes(){
-  try{
-    const res=await fetch('/api/live?tickers=HSBK,KSPI,KZAP,KMGZ,KCEL,KEGC',{cache:'no-store'}),j=await res.json();
-    window.kvQuotes={};(j.items||[]).forEach(x=>{if(!x.error)window.kvQuotes[x.ticker]=x});
-    renderDashboardStocks();
-    if(document.getElementById('stockDetailModal').classList.contains('open'))openStockDetail(kvDetailTicker);
-  }catch(e){renderDashboardStocks()}
+window.kvQuotes=window.kvQuotes||{};
+function kvRefreshDashboardQuotes(){
+  renderDashboardStocks();
+  if(document.getElementById('stockDetailModal')?.classList.contains('open'))openStockDetail(kvDetailTicker);
 }
 function kvSyncUser(){
   const u=(typeof kvAuthenticatedUser!=='undefined'?kvAuthenticatedUser:null);const el=document.getElementById('kvDashboardUser');if(el&&u)el.textContent='@'+u.username;
 }
-setTimeout(()=>{kvSyncUser();loadWorldNews();kvRefreshDashboardQuotes();renderDashboardStocks()},900);
-setInterval(kvRefreshDashboardQuotes,25000);
-window.addEventListener('resize',()=>{if(document.getElementById('stockDetailModal').classList.contains('open'))drawStockDetail(kvDetailTicker,kvDetailRange)});
+setTimeout(()=>{kvSyncUser();if(appStarted){loadWorldNews();kvRefreshDashboardQuotes()}},900);
 </script></body>
 </html>
