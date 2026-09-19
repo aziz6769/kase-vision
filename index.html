@@ -34,6 +34,29 @@ body.kv-locked>header,body.kv-locked>main{visibility:hidden}
 @media(max-width:800px){.kv-hero{padding-top:9vh}.kv-copy h1{font-size:58px}.kv-copy p{font-size:18px}.kv-features{margin-top:55px;grid-template-columns:repeat(3,1fr)}.kv-feature{padding-right:12px;margin-right:12px}}
 @media(max-width:560px){.kv-status span:not(.kv-dot){display:none}.kv-hero{padding:7vh 7vw}.kv-copy h1{font-size:48px}.kv-features{grid-template-columns:1fr;gap:16px;margin-top:45px}.kv-feature{border:0!important;margin:0;padding:0}.kv-feature:nth-child(n+2){display:none}.kv-modal{padding:24px}.kv-formula{font-size:18px}}
 
+
+/* Account layer */
+.kv-auth-backdrop{position:fixed;inset:0;z-index:130;background:rgba(1,5,10,.78);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;padding:20px}
+.kv-auth-backdrop.open{display:flex}
+.kv-auth{width:min(430px,100%);background:linear-gradient(145deg,#081522,#06101b);border:1px solid #315271;border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.6);padding:30px;color:#edf5ff;position:relative}
+.kv-auth h2{font-size:27px;margin:0 0 7px;color:#fff}
+.kv-auth-sub{color:#9fb2c9;font-size:13px;line-height:1.5;margin-bottom:20px}
+.kv-auth-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #29445e;margin-bottom:18px}
+.kv-auth-tab{border:0;background:transparent;color:#8298af;padding:10px 8px;border-radius:0;cursor:pointer}
+.kv-auth-tab.active{color:#fff;border-bottom:2px solid #1680ff}
+.kv-auth-form{display:grid;gap:12px}
+.kv-auth-form label{font-size:12px;color:#9fb2c9}
+.kv-auth-form input{width:100%;margin-top:6px;background:#06111d;border:1px solid #29445e;color:#fff;border-radius:9px;padding:12px}
+.kv-auth-form input:focus{outline:none;border-color:#1680ff;box-shadow:0 0 0 3px #1680ff1c}
+.kv-auth-submit{margin-top:5px;border:1px solid #086cf0;background:#086cf0;color:#fff;border-radius:9px;padding:12px;cursor:pointer;font-weight:700}
+.kv-auth-error{min-height:18px;color:#ff9c9c;font-size:12px}
+.kv-auth-note{font-size:11px;color:#7188a0;line-height:1.45;margin-top:5px}
+.kv-auth-close{position:absolute;right:16px;top:12px;border:0;background:transparent;color:#9fb2c9;font-size:26px;cursor:pointer}
+.kv-user{display:flex;align-items:center;gap:10px;margin-left:10px}
+.kv-user-name{font-size:12px;color:#53667a}
+.kv-logout{border:1px solid #d7dce3;background:#fff;color:#343a40;padding:7px 10px;border-radius:9px;cursor:pointer;font-size:12px}
+@media(max-width:620px){.kv-user-name{display:none}.kv-auth{padding:24px}}
+
 </style>
 </head>
 <body class="kv-locked">
@@ -88,8 +111,27 @@ body.kv-locked>header,body.kv-locked>main{visibility:hidden}
     <p class="small" style="color:#8095ad">Это исследовательская модель на исторических данных. Она не гарантирует будущую доходность и не является персональной инвестиционной рекомендацией.</p>
     <div class="kv-modal-foot"><button class="kv-ok" id="okMarkowitz">Понятно</button></div>
   </div>
+
+<div id="authModal" class="kv-auth-backdrop" aria-hidden="true">
+  <div class="kv-auth" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button class="kv-auth-close" id="closeAuth" aria-label="Закрыть">×</button>
+    <h2 id="authTitle">Войти в KASE Vision</h2>
+    <div class="kv-auth-sub">Ваши настройки портфеля и параметры исследования будут привязаны к аккаунту.</div>
+    <div class="kv-auth-tabs">
+      <button class="kv-auth-tab active" data-auth-tab="login">Войти</button>
+      <button class="kv-auth-tab" data-auth-tab="register">Создать аккаунт</button>
+    </div>
+    <form id="authForm" class="kv-auth-form">
+      <label>Логин<input id="authUsername" autocomplete="username" minlength="3" maxlength="32" required></label>
+      <label>Пароль<input id="authPassword" type="password" autocomplete="current-password" minlength="6" maxlength="128" required></label>
+      <div id="authError" class="kv-auth-error"></div>
+      <button id="authSubmit" class="kv-auth-submit" type="submit">Войти</button>
+    </form>
+    <div class="kv-auth-note">Не вводите здесь пароль от других сервисов. KASE Vision использует отдельный локальный аккаунт проекта.</div>
+  </div>
 </div>
-<header><nav><b>KASE Vision</b><a href="#market">Рынок</a><a href="#decision">Решение</a><a href="#allocation">Бюджет</a><a href="#research">Исследование</a><a href="#tech">Метод</a></nav></header>
+
+<header><nav><b>KASE Vision</b><a href="#market">Рынок</a><a href="#decision">Решение</a><a href="#allocation">Бюджет</a><a href="#research">Исследование</a><a href="#tech">Метод</a><div class="kv-user"><span id="kvUserName" class="kv-user-name"></span><button id="logoutKaseVision" class="kv-logout">Выйти</button></div></nav></header>
 <main class="wrap">
 <section class="hero"><div class="eyebrow">Markowitz Research • KASE • v7</div><h1>Не просто 60 000 процентов — конкретные комбинации акций.</h1><p>Модель использует официально опубликованные месячные цены KASE, оценивает доходность, риск и совместное движение шести акций и показывает три практических исследовательских портфеля. Результаты исторические и модельные — не гарантия будущей прибыли.</p></section>
 <section id="market" class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><h2>Последние опубликованные цены KASE</h2><div class="sub">Автоматическая проверка публичных страниц каждые 25 секунд.</div></div><span class="badge">KASE public data</span></div><div id="live" class="live"></div><div id="liveTime" class="muted small" style="margin-top:10px">обновление…</div></section>
@@ -109,27 +151,94 @@ body.kv-locked>header,body.kv-locked>main{visibility:hidden}
 document.body.classList.add('kv-locked');
 const kvLanding=document.getElementById('landing');
 const kvModal=document.getElementById('markowitzModal');
+const authModal=document.getElementById('authModal');
+let authMode='login';
+
 function openMarkowitz(){kvModal.classList.add('open');kvModal.setAttribute('aria-hidden','false')}
 function closeMarkowitz(){kvModal.classList.remove('open');kvModal.setAttribute('aria-hidden','true')}
 document.getElementById('openMarkowitz').onclick=openMarkowitz;
 document.getElementById('closeMarkowitz').onclick=closeMarkowitz;
 document.getElementById('okMarkowitz').onclick=closeMarkowitz;
 kvModal.addEventListener('click',e=>{if(e.target===kvModal)closeMarkowitz()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMarkowitz()});
-document.getElementById('enterKaseVision').onclick=()=>{
+
+function openAuth(mode='login'){
+  authMode=mode;
+  document.querySelectorAll('.kv-auth-tab').forEach(x=>x.classList.toggle('active',x.dataset.authTab===mode));
+  document.getElementById('authTitle').textContent=mode==='login'?'Войти в KASE Vision':'Создать аккаунт';
+  document.getElementById('authSubmit').textContent=mode==='login'?'Войти':'Зарегистрироваться';
+  document.getElementById('authPassword').autocomplete=mode==='login'?'current-password':'new-password';
+  document.getElementById('authError').textContent='';
+  authModal.classList.add('open');authModal.setAttribute('aria-hidden','false');
+  setTimeout(()=>document.getElementById('authUsername').focus(),50);
+}
+function closeAuth(){authModal.classList.remove('open');authModal.setAttribute('aria-hidden','true')}
+document.getElementById('enterKaseVision').onclick=()=>openAuth('login');
+document.getElementById('closeAuth').onclick=closeAuth;
+authModal.addEventListener('click',e=>{if(e.target===authModal)closeAuth()});
+document.querySelectorAll('.kv-auth-tab').forEach(x=>x.onclick=()=>openAuth(x.dataset.authTab));
+
+function showMain(user){
   document.body.classList.remove('kv-locked');
+  document.getElementById('kvUserName').textContent='@'+user.username;
   kvLanding.style.transition='opacity .35s ease,transform .35s ease';
   kvLanding.style.opacity='0';kvLanding.style.transform='scale(1.01)';
-  setTimeout(()=>kvLanding.remove(),360);
+  setTimeout(()=>{if(kvLanding.isConnected)kvLanding.style.display='none'},360);
+  closeAuth();
   window.scrollTo({top:0,behavior:'instant'});
+  if(typeof applyUserPreferences==='function')applyUserPreferences(user);
+}
+function showLanding(){
+  document.body.classList.add('kv-locked');
+  kvLanding.style.display='block';kvLanding.style.opacity='1';kvLanding.style.transform='none';
+  document.getElementById('kvUserName').textContent='';
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+async function authSubmit(e){
+  e.preventDefault();
+  const username=document.getElementById('authUsername').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const error=document.getElementById('authError');
+  const button=document.getElementById('authSubmit');
+  error.textContent='';button.disabled=true;button.textContent='Проверка…';
+  try{
+    const res=await fetch(authMode==='login'?'/api/auth/login':'/api/auth/register',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.detail||'Не удалось выполнить операцию.');
+    showMain(data.user);
+  }catch(err){error.textContent=err.message}
+  finally{button.disabled=false;button.textContent=authMode==='login'?'Войти':'Зарегистрироваться'}
+}
+document.getElementById('authForm').addEventListener('submit',authSubmit);
+
+document.getElementById('logoutKaseVision').onclick=async()=>{
+  await fetch('/api/auth/logout',{method:'POST'});
+  showLanding();
+  openAuth('login');
 };
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeMarkowitz();closeAuth()}
+});
+
+async function restoreSession(){
+  try{
+    const res=await fetch('/api/auth/me',{cache:'no-store'});
+    const data=await res.json();
+    if(data.authenticated)showMain(data.user);
+  }catch(e){}
+}
+restoreSession();
 </script>
 <script>
 let D=null,selected='balanced',page=1,variantsLoaded=false;const colors=['#0a66c2','#f08c00','#2b8a3e','#d94841','#6f42c1','#795548'];const $=id=>document.getElementById(id);const pct=(x,d=2)=>x==null?'—':(Number(x)*100).toFixed(d)+'%';const money=x=>x==null?'—':Number(x).toLocaleString('ru-RU',{maximumFractionDigits:2});const profileColor={min_risk:'#0a66c2',balanced:'#b76e00',max_sharpe:'#087f5b',equal:'#6f42c1'};
 function setup(canvas,h=350){const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=r.width*d;canvas.height=h*d;const c=canvas.getContext('2d');c.scale(d,d);return[c,r.width,h]}
 function lineChart(id,series){const[c,w,h]=setup($(id)),p={l:44,r:14,t:16,b:30},pw=w-p.l-p.r,ph=h-p.t-p.b;const all=series.flatMap(s=>s.values),mn=Math.min(...all),mx=Math.max(...all);const n=Math.max(...series.map(s=>s.values.length));const X=i=>p.l+pw*i/Math.max(1,n-1),Y=v=>p.t+(mx-v)/(mx-mn||1)*ph;c.clearRect(0,0,w,h);c.strokeStyle='#e6e8ec';c.lineWidth=1;for(let i=0;i<5;i++){const y=p.t+ph*i/4;c.beginPath();c.moveTo(p.l,y);c.lineTo(w-p.r,y);c.stroke()}series.forEach((s,k)=>{c.strokeStyle=colors[k%colors.length];c.lineWidth=2;c.beginPath();s.values.forEach((v,i)=>i?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v)));c.stroke()});c.fillStyle='#7a8089';c.font='11px Arial';c.fillText(mn.toFixed(2)+'×',4,h-28);c.fillText(mx.toFixed(2)+'×',4,22)}
 function scatter(){const r=D.result,[c,w,h]=setup($('frontier')),p={l:52,r:18,t:18,b:40},pw=w-p.l-p.r,ph=h-p.t-p.b;const pts=r.cloud.concat(r.frontier),xs=pts.map(q=>q.risk*100),ys=pts.map(q=>q.return*100);let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);const dx=(xmax-xmin)*.08||1,dy=(ymax-ymin)*.10||1;xmin-=dx;xmax+=dx;ymin-=dy;ymax+=dy;const X=x=>p.l+(x-xmin)/(xmax-xmin)*pw,Y=y=>p.t+(ymax-y)/(ymax-ymin)*ph;c.clearRect(0,0,w,h);c.strokeStyle='#e6e8ec';for(let i=0;i<5;i++){let y=p.t+ph*i/4;c.beginPath();c.moveTo(p.l,y);c.lineTo(w-p.r,y);c.stroke()}c.fillStyle='#9aa0a9';c.globalAlpha=.26;r.cloud.forEach(q=>{c.beginPath();c.arc(X(q.risk*100),Y(q.return*100),2,0,Math.PI*2);c.fill()});c.globalAlpha=1;const f=r.frontier.slice().sort((a,b)=>a.risk-b.risk);c.strokeStyle='#111';c.lineWidth=2;c.beginPath();f.forEach((q,i)=>i?c.lineTo(X(q.risk*100),Y(q.return*100)):c.moveTo(X(q.risk*100),Y(q.return*100)));c.stroke();['min_risk','balanced','max_sharpe'].forEach(k=>{const q=r.profiles[k];c.fillStyle=profileColor[k];c.beginPath();c.arc(X(q.risk*100),Y(q.return*100),7,0,Math.PI*2);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke()});c.fillStyle='#777';c.font='11px Arial';c.fillText('Риск / волатильность, %',w/2-60,h-10);c.save();c.translate(14,h/2+50);c.rotate(-Math.PI/2);c.fillText('Модельная доходность, %',0,0);c.restore()}
-function renderProfiles(){const r=D.result;const descriptions={min_risk:'Приоритет — снизить волатильность.',balanced:'Компромисс риска и модельной доходности.',max_sharpe:'Максимум премии за риск в модели.'};$('profiles').innerHTML=['min_risk','balanced','max_sharpe'].map(k=>{const p=r.profiles[k],sc=p.scenario_12m;const chips=Object.entries(p.weights).filter(([,w])=>w>=.03).sort((a,b)=>b[1]-a[1]).map(([t,w])=>`<span class="chip"><b>${t}</b> ${pct(w,1)}</span>`).join('');return `<div class="profile ${k===selected?'active':''}" data-profile="${k}"><div class="profile-head"><div><h3>${p.label}</h3><div class="muted small">${descriptions[k]}</div></div><span class="badge">${pct(p.return,1)}/год</span></div><div class="mini-grid"><div class="mini"><span class="muted small">Риск σ</span><b>${pct(p.risk,1)}</b></div><div class="mini"><span class="muted small">Sharpe</span><b>${p.sharpe.toFixed(2)}</b></div><div class="mini"><span class="muted small">Факт 12 мес.</span><b>${pct(p.trailing_12m,1)}</b></div><div class="mini"><span class="muted small">Сценарий 10–90%</span><b>${pct(sc.p10,0)}…${pct(sc.p90,0)}</b></div></div><div class="weights">${chips}</div></div>`}).join('');document.querySelectorAll('.profile').forEach(el=>el.onclick=()=>{selected=el.dataset.profile;renderProfiles();renderSelected();loadAllocation()})}
+function renderProfiles(){const r=D.result;const descriptions={min_risk:'Приоритет — снизить волатильность.',balanced:'Компромисс риска и модельной доходности.',max_sharpe:'Максимум премии за риск в модели.'};$('profiles').innerHTML=['min_risk','balanced','max_sharpe'].map(k=>{const p=r.profiles[k],sc=p.scenario_12m;const chips=Object.entries(p.weights).filter(([,w])=>w>=.03).sort((a,b)=>b[1]-a[1]).map(([t,w])=>`<span class="chip"><b>${t}</b> ${pct(w,1)}</span>`).join('');return `<div class="profile ${k===selected?'active':''}" data-profile="${k}"><div class="profile-head"><div><h3>${p.label}</h3><div class="muted small">${descriptions[k]}</div></div><span class="badge">${pct(p.return,1)}/год</span></div><div class="mini-grid"><div class="mini"><span class="muted small">Риск σ</span><b>${pct(p.risk,1)}</b></div><div class="mini"><span class="muted small">Sharpe</span><b>${p.sharpe.toFixed(2)}</b></div><div class="mini"><span class="muted small">Факт 12 мес.</span><b>${pct(p.trailing_12m,1)}</b></div><div class="mini"><span class="muted small">Сценарий 10–90%</span><b>${pct(sc.p10,0)}…${pct(sc.p90,0)}</b></div></div><div class="weights">${chips}</div></div>`}).join('');document.querySelectorAll('.profile').forEach(el=>el.onclick=()=>{selected=el.dataset.profile;renderProfiles();renderSelected();loadAllocation();saveUserPreferences()})}
 function renderSelected(){const r=D.result,p=r.profiles[selected],st=r.asset_stats;$('selectedTitle').textContent=p.label+' портфель';$('selectedSummary').textContent='Конкретное распределение капитала по результатам модели на реальной месячной выборке KASE.';$('selectedWeights').innerHTML=Object.entries(p.weights).sort((a,b)=>b[1]-a[1]).map(([t,w])=>`<span class="chip"><b>${t}</b> ${pct(w,1)}</span>`).join('');$('selReturn').textContent=pct(p.return);$('selRisk').textContent=pct(p.risk);$('selTrailing').textContent=pct(p.trailing_12m);$('selRange').textContent=pct(p.scenario_12m.p10,0)+' … '+pct(p.scenario_12m.p90,0);$('leaders').innerHTML=p.leaders.map(x=>`<li><b>${x.ticker}</b> — ${pct(x.weight,1)} портфеля; историческая доходность ${pct(st[x.ticker].annual_return_raw,1)}, риск ${pct(st[x.ticker].annual_risk,1)}.</li>`).join('');const top=p.leaders.slice(0,3).map(x=>x.ticker).join(', ');$('whyText').textContent=`Наибольшие модельные веса сейчас у ${top}. Алгоритм выбрал их не по одному показателю: одновременно учитываются ожидаемая доходность, волатильность и ковариации с остальными акциями. Ограничение 35% не позволяет одной бумаге захватить весь портфель.`}
 function renderAssetStats(){const r=D.result,a=r.period.assets;$('assetStats').innerHTML='<tr><th>Акция</th><th>Доходность/год*</th><th>Риск σ</th><th>За весь период</th></tr>'+a.map(t=>{const s=r.asset_stats[t];return `<tr><td><b>${t}</b><div class="muted small">${s.name}</div></td><td class="${s.annual_return_raw>=0?'up':'down'}">${pct(s.annual_return_raw)}</td><td>${pct(s.annual_risk)}</td><td class="${s.sample_return>=0?'up':'down'}">${pct(s.sample_return)}</td></tr>`}).join('')+'<tr><td colspan="4" class="muted small" style="text-align:left">* Историческая арифметическая годовая оценка; не прогноз и не обещание будущей доходности.</td></tr>'}
 function render(){const r=D.result,p=r.period;$('period').textContent=p.start+' — '+p.end;$('months').textContent=p.months+' месячных цен';$('obs').textContent=p.return_observations;$('cap').textContent=pct(r.max_weight,0);renderProfiles();renderSelected();renderAssetStats();scatter();lineChart('priceChart',r.normalized.map(s=>({values:s.values})));$('priceLegend').innerHTML=r.normalized.map((s,i)=>`<span><i style="--c:${colors[i]}"></i>${s.ticker}</span>`).join('')}
@@ -137,7 +246,28 @@ function liveNum(x){return x==null?'—':Number(x).toLocaleString('ru-RU',{minim
 async function refreshLive(){try{const res=await fetch('/api/live?tickers=HSBK,KSPI,KZAP,KMGZ,KCEL,KEGC'),j=await res.json();$('live').innerHTML=(j.items||[]).map(x=>x.error?`<div class="quote"><div class="ticker">${x.ticker}</div><div class="muted">нет данных</div></div>`:`<div class="quote"><div class="ticker">${x.ticker}</div><div class="price">${liveNum(x.price)} KZT</div><div class="${x.change_pct>0?'up':x.change_pct<0?'down':'neutral'}">${livePct(x.change_pct)}</div></div>`).join('');$('liveTime').textContent='Последняя проверка: '+new Date(j.fetched_at).toLocaleTimeString('ru-RU')+' • значение меняется только при новой опубликованной цене KASE'}catch(e){$('liveTime').textContent='Нет соединения с публичными страницами KASE'}}
 async function loadAllocation(){if(!D)return;const budget=Math.max(1,Number($('budget').value)||1000000);$('allocStatus').textContent='получаю последние цены…';try{const res=await fetch(`/api/recommendations?budget=${encodeURIComponent(budget)}&profile=${encodeURIComponent(selected)}`);const j=await res.json();if(!res.ok)throw new Error(j.detail||'Ошибка');$('allocationTable').innerHTML='<tr><th>Акция</th><th>Вес</th><th>Цена KZT</th><th>Целевая сумма</th><th>≈ акций</th><th>Факт. сумма</th></tr>'+j.rows.map(x=>`<tr><td><b>${x.ticker}</b><div class="muted small">${x.price_source.includes('latest')?'последняя KASE':'месячная fallback'}</div></td><td>${pct(x.weight,1)}</td><td class="kzt">${money(x.price)}</td><td class="kzt">${money(x.target_kzt)}</td><td>${x.shares}</td><td class="kzt">${money(x.actual_kzt)}</td></tr>`).join('');$('cashInfo').textContent=`Профиль: ${j.label}. Инвестировано ≈ ${money(j.invested)} KZT; остаток из-за округления ≈ ${money(j.cash_residual)} KZT. Лоты, комиссии, налоги, спред и ликвидность не учтены.`;$('allocStatus').textContent='готово'}catch(e){$('allocStatus').textContent='ошибка расчёта: '+e.message}}
 async function loadVariants(p=1){page=Math.max(1,p);const res=await fetch(`/api/portfolios?page=${page}&limit=20&sort=${$('sort').value}&direction=${$('dir').value}`),j=await res.json();$('variants').innerHTML='<tr><th>#</th><th>Доходность</th><th>Риск</th><th>Sharpe</th>'+j.assets.map(t=>`<th>${t}</th>`).join('')+'</tr>'+j.rows.map(x=>`<tr><td>${x.id}</td><td>${pct(x.return)}</td><td>${pct(x.risk)}</td><td>${x.sharpe.toFixed(2)}</td>`+j.assets.map(t=>`<td>${pct(x.weights[t],1)}</td>`).join('')+'</tr>').join('');const pages=Math.ceil(j.total/j.limit);$('pageInfo').textContent=`Страница ${j.page} из ${pages} • ${j.total.toLocaleString('ru-RU')} комбинаций`;$('prev').disabled=page<=1;$('next').disabled=page>=pages;variantsLoaded=true}
-$('calcBudget').onclick=loadAllocation;$('refreshVariants').onclick=()=>loadVariants(1);$('prev').onclick=()=>loadVariants(page-1);$('next').onclick=()=>loadVariants(page+1);$('technicalDetails').addEventListener('toggle',e=>{if(e.target.open&&!variantsLoaded)loadVariants(1)});async function boot(){const res=await fetch('/api/analysis');D=await res.json();render();refreshLive();loadAllocation()}boot();setInterval(refreshLive,25000);window.onresize=()=>{if(D){scatter();lineChart('priceChart',D.result.normalized.map(s=>({values:s.values})))}};
+$('calcBudget').onclick=async()=>{await loadAllocation();await saveUserPreferences()};$('refreshVariants').onclick=()=>loadVariants(1);$('prev').onclick=()=>loadVariants(page-1);$('next').onclick=()=>loadVariants(page+1);$('technicalDetails').addEventListener('toggle',e=>{if(e.target.open&&!variantsLoaded)loadVariants(1)});async function boot(){const res=await fetch('/api/analysis');D=await res.json();render();refreshLive();loadAllocation()}boot();setInterval(refreshLive,25000);window.onresize=()=>{if(D){scatter();lineChart('priceChart',D.result.normalized.map(s=>({values:s.values})))}};
 </script>
+
+<script id="kase-vision-user-prefs">
+async function saveUserPreferences(){
+  try{
+    const budget=Math.max(1,Number(document.getElementById('budget').value)||1000000);
+    await fetch('/api/user/preferences',{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({selected_profile:selected,budget})
+    });
+  }catch(e){}
+}
+function applyUserPreferences(user){
+  if(!user)return;
+  if(['min_risk','balanced','max_sharpe','equal'].includes(user.selected_profile)){
+    selected=user.selected_profile;
+    if(window.D){renderProfiles();renderSelected();loadAllocation()}
+  }
+  if(Number(user.budget)>0)document.getElementById('budget').value=Math.round(Number(user.budget));
+}
+</script>
+
 </body>
 </html>
