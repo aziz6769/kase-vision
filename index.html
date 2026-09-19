@@ -111,6 +111,7 @@ body.kv-locked>header,body.kv-locked>main{visibility:hidden}
     <p class="small" style="color:#8095ad">Это исследовательская модель на исторических данных. Она не гарантирует будущую доходность и не является персональной инвестиционной рекомендацией.</p>
     <div class="kv-modal-foot"><button class="kv-ok" id="okMarkowitz">Понятно</button></div>
   </div>
+</div>
 
 <div id="authModal" class="kv-auth-backdrop" aria-hidden="true">
   <div class="kv-auth" role="dialog" aria-modal="true" aria-labelledby="authTitle">
@@ -185,7 +186,7 @@ function showMain(user){
   setTimeout(()=>{if(kvLanding.isConnected)kvLanding.style.display='none'},360);
   closeAuth();
   window.scrollTo({top:0,behavior:'instant'});
-  if(typeof applyUserPreferences==='function')applyUserPreferences(user);
+  if(typeof applyUserPreferences==='function')applyUserPreferences(user);else window.kvPendingUser=user;
 }
 function showLanding(){
   document.body.classList.add('kv-locked');
@@ -267,6 +268,7 @@ function applyUserPreferences(user){
   }
   if(Number(user.budget)>0)document.getElementById('budget').value=Math.round(Number(user.budget));
 }
+if(window.kvPendingUser){const u=window.kvPendingUser;delete window.kvPendingUser;setTimeout(()=>applyUserPreferences(u),350)}
 </script>
 
 </body>
