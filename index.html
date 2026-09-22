@@ -125,7 +125,7 @@ canvas{background:#061522;border-color:#183852}
 .kv-stock-name{font-weight:700;font-size:13px}.kv-stock-company{font-size:10px;color:#7793ad;margin-top:3px}.kv-stock-price{text-align:right;font-size:12px}.kv-stock-change{font-size:11px;margin-top:4px}
 .kv-market-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
 .kv-market-metric{padding:14px;border:1px solid #163b58;border-radius:11px;background:#061726}.kv-market-label{font-size:10px;color:#7895b2}.kv-market-value{font-size:18px;font-weight:750;margin-top:7px}.kv-market-change{font-size:10px;color:#27d88a;margin-top:4px}
-.kv-archive-switch{display:flex;align-items:center;gap:7px;margin:13px 0;flex-wrap:wrap}.kv-archive-period{border:1px solid #234966;background:#061522;color:#86a3c2;padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer}.kv-archive-period.active{background:#0c4c7d;border-color:#167ec0;color:#fff}.kv-archive-switch select{margin-left:auto;min-width:160px}.kv-current-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.kv-current-grid>div{border:1px solid #163a56;border-radius:10px;padding:11px;background:#061726}.kv-current-grid span{display:block;color:#7894ae;font-size:10px}.kv-current-grid b{display:block;margin-top:5px;font-size:14px}@media(max-width:700px){.kv-current-grid{grid-template-columns:repeat(2,1fr)}.kv-archive-switch select{margin-left:0;width:100%}}.kv-all-btn{color:#61b4ff!important}
+.kv-all-btn{color:#61b4ff!important}
 .kv-modal-dark{width:min(850px,100%);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#071b2d,#04101d);border:1px solid #285374;border-radius:16px;box-shadow:0 30px 100px #000b;padding:22px;color:#eef6ff;position:relative}
 .kv-modal-dark h2{margin:0 45px 3px;font-size:22px}.kv-detail-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.kv-detail-symbol{font-size:30px;font-weight:800;letter-spacing:.02em}.kv-detail-company{color:#829bb5;margin-top:4px}.kv-detail-price{font-size:25px;font-weight:800;text-align:right}.kv-detail-change{font-size:13px;text-align:right;margin-top:4px}
 .kv-chart-tabs{display:flex;gap:8px;margin:18px 0 10px}.kv-chart-tab{border:0;background:transparent;color:#7894ae;padding:7px 12px;border-radius:8px;font-size:12px}.kv-chart-tab.active{background:#0c4c7d;color:#fff}
@@ -198,26 +198,7 @@ nav a:hover{color:#07883b}
 .kv-market-value{color:#20242b}
 .kv-all-btn{color:#087f5b!important}
 </style>
-<style>
-.kv-security-modal{width:min(1120px,100%);max-height:92vh}
-.kv-kase-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #173b58;margin:18px 0 14px;padding-bottom:8px}
-.kv-kase-tab{border:0;background:transparent;color:#7894ae;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:12px}
-.kv-kase-tab.active{background:#0c4c7d;color:#fff}
-.kv-kase-section-title{font-size:15px;font-weight:800;margin-bottom:11px}
-.kv-security-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.kv-security-grid>div,.kv-summary-cards>div{padding:12px;border:1px solid #173a58;border-radius:10px;background:#061726}
-.kv-security-grid span,.kv-summary-cards span{display:block;color:#7894ae;font-size:10px;margin-bottom:5px}
-.kv-security-grid b,.kv-summary-cards b{font-size:13px;overflow-wrap:anywhere}
-.kv-security-note{margin-top:12px;padding:11px 13px;border-left:3px solid #1680ff;background:#061a2b;color:#8fa7c5;font-size:11px}
-.kv-summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.kv-kase-archive-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-end;margin-bottom:10px}
-.kv-archive-wrap{overflow:auto;border:1px solid #173a58;border-radius:10px;max-height:54vh}
-.kv-archive-table{min-width:980px;font-size:11px}
-.kv-archive-table th{position:sticky;top:0;background:#071b2d;z-index:1}
-.kv-archive-table td,.kv-archive-table th{padding:8px 9px}
-.kv-archive-empty{text-align:center!important;padding:24px!important;color:#7894ae}
-@media(max-width:800px){.kv-security-grid{grid-template-columns:repeat(2,1fr)}.kv-summary-cards{grid-template-columns:repeat(2,1fr)}}
-</style></head>
+</head>
 <body class="kv-locked">
 
 <section id="landing" class="kv-landing">
@@ -371,66 +352,23 @@ nav a:hover{color:#07883b}
   </div>
 </div>
 <div id="stockDetailModal" class="kv-modal-backdrop" aria-hidden="true">
-  <div class="kv-modal-dark kv-security-modal" role="dialog" aria-modal="true" aria-labelledby="stockDetailTitle">
+  <div class="kv-modal-dark" role="dialog" aria-modal="true" aria-labelledby="stockDetailTitle">
     <button class="kv-close-dark" id="closeStockDetail" aria-label="Закрыть">×</button>
     <div class="kv-detail-top">
       <div><div id="stockDetailTitle" class="kv-detail-symbol">HSBK</div><div id="stockDetailCompany" class="kv-detail-company">Halyk Bank</div><div id="stockDetailExchange" class="kv-detail-company">KASE • KZT</div></div>
       <div><div id="stockDetailPrice" class="kv-detail-price">—</div><div id="stockDetailChange" class="kv-detail-change">—</div></div>
     </div>
-    <div class="kv-kase-tabs">
-      <button class="kv-kase-tab active" data-kase-tab="characteristics">Характеристики ценной бумаги</button>
-      <button class="kv-kase-tab" data-kase-tab="trading">Торги</button>
-      <button class="kv-kase-tab" data-kase-tab="archive">Архив</button>
+    <div class="kv-chart-tabs"><button class="kv-chart-tab" data-range="3">3 мес.</button><button class="kv-chart-tab" data-range="6">6 мес.</button><button class="kv-chart-tab" data-range="12">1 г.</button><button class="kv-chart-tab" data-range="24">2 г.</button><button class="kv-chart-tab" data-range="all">Вся история</button></div>
+    <canvas id="stockDetailChart" class="kv-detail-chart"></canvas>
+    <div class="kv-detail-period-row"><div><span>Период</span><b id="detailPeriod">—</b></div><strong id="detailPeriodChange" class="kv-detail-period-change">—</strong></div>
+    <div class="kv-detail-range-stats"><div><span>Начало</span><b id="detailPeriodStart">—</b></div><div><span>Максимум</span><b id="detailHigh">—</b></div><div><span>Минимум</span><b id="detailLow">—</b></div><div><span>Конец</span><b id="detailPeriodEnd">—</b></div></div>
+    <div class="kv-detail-stats">
+      <div class="kv-detail-stat"><span>Оценка доходности / год</span><b id="detailReturn">—</b></div>
+      <div class="kv-detail-stat"><span>Риск σ</span><b id="detailRisk">—</b></div>
+      <div class="kv-detail-stat"><span>За весь период</span><b id="detailSample">—</b></div>
+      <div class="kv-detail-stat"><span>Источник цены</span><b id="detailSource">KASE</b></div>
     </div>
-    <section id="kaseCharacteristics" class="kv-kase-section">
-      <div class="kv-kase-section-title">Характеристики ценной бумаги</div>
-      <div class="kv-security-grid">
-        <div><span>Торговый код</span><b id="secTicker">—</b></div><div><span>ISIN</span><b id="secIsin">—</b></div>
-        <div><span>Площадка</span><b id="secPlatform">—</b></div><div><span>Сектор</span><b id="secSector">—</b></div>
-        <div><span>Категория</span><b id="secCategory">—</b></div><div><span>Начало торгов</span><b id="secTrading">—</b></div>
-        <div><span>Индекс</span><b id="secIndex">—</b></div><div><span>Валюта</span><b>KZT</b></div>
-      </div>
-      <div class="kv-security-note">Основные параметры повторяют блок характеристик KASE для выбранной акции.</div>
-    </section>
-    <section id="kaseTrading" class="kv-kase-section" style="display:none">
-      <div class="kv-kase-section-title">Сводные данные</div>
-      <div class="kv-summary-cards">
-        <div><span>Last</span><b id="tradeLast">—</b></div><div><span>Bid</span><b id="tradeBid">—</b></div><div><span>Offer</span><b id="tradeOffer">—</b></div>
-        <div><span>W-aver</span><b id="tradeWaver">—</b></div><div><span>High</span><b id="tradeHigh">—</b></div><div><span>Low</span><b id="tradeLow">—</b></div>
-      </div>
-      <div class="kv-detail-stats">
-        <div class="kv-detail-stat"><span>Оценка доходности / год</span><b id="detailReturn">—</b></div>
-        <div class="kv-detail-stat"><span>Риск σ</span><b id="detailRisk">—</b></div>
-        <div class="kv-detail-stat"><span>За весь период</span><b id="detailSample">—</b></div>
-        <div class="kv-detail-stat"><span>Источник цены</span><b id="detailSource">KASE</b></div>
-      </div>
-      <div class="kv-chart-tabs"><button class="kv-chart-tab" data-range="3">3 мес.</button><button class="kv-chart-tab" data-range="6">6 мес.</button><button class="kv-chart-tab" data-range="12">1 г.</button><button class="kv-chart-tab" data-range="24">2 г.</button><button class="kv-chart-tab active" data-range="all">Вся история</button></div>
-      <canvas id="stockDetailChart" class="kv-detail-chart"></canvas>
-      <div class="kv-detail-period-row"><div><span>Период</span><b id="detailPeriod">—</b></div><strong id="detailPeriodChange" class="kv-detail-period-change">—</strong></div>
-      <div class="kv-detail-range-stats"><div><span>Начало</span><b id="detailPeriodStart">—</b></div><div><span>Максимум</span><b id="detailHigh">—</b></div><div><span>Минимум</span><b id="detailLow">—</b></div><div><span>Конец</span><b id="detailPeriodEnd">—</b></div></div>
-    </section>
-    <section id="kaseArchive" class="kv-kase-section" style="display:none">
-      <div class="kv-kase-archive-head">
-        <div><div class="kv-kase-section-title">Торги и архив</div><div class="muted small">Параметры в формате публичной страницы KASE.</div></div>
-        <div id="archiveStatus" class="muted small">Загрузка…</div>
-      </div>
-      <div class="kv-archive-switch" role="tablist" aria-label="Период">
-        <button type="button" class="kv-archive-period active" data-archive-period="current">Текущий день</button>
-        <button type="button" class="kv-archive-period" data-archive-period="archive">Архив</button>
-        <select id="archiveDateSelect" aria-label="Дата архива"></select>
-      </div>
-      <div id="archiveCurrent" class="kv-archive-current">
-        <div class="kv-current-grid">
-          <div><span>Bid</span><b id="currentBid">—</b></div><div><span>Offer</span><b id="currentOffer">—</b></div>
-          <div><span>Last</span><b id="currentLast">—</b></div><div><span>W-aver</span><b id="currentWaver">—</b></div>
-          <div><span>High</span><b id="currentHigh">—</b></div><div><span>Low</span><b id="currentLow">—</b></div>
-        </div>
-      </div>
-      <div id="archiveTablePanel" class="kv-archive-wrap" style="display:none">
-        <table class="kv-archive-table"><thead><tr><th>Date/Period</th><th>Bid</th><th>Offer</th><th>Last</th><th>W-aver</th><th>High</th><th>Low</th><th>Trade</th><th>Shares</th><th>m. KZT</th><th>th. USD</th></tr></thead><tbody id="archiveRows"></tbody></table>
-      </div>
-    </section>
-    <div id="detailNote" class="muted small" style="margin-top:13px;line-height:1.5">Данные загружаются с публичной страницы KASE; это не лицензированный real-time feed.</div>
+    <div id="detailNote" class="muted small" style="margin-top:13px;line-height:1.5">Исторические данные KASE Vision. Текущая цена — последняя доступная публичная цена KASE; это не лицензированный tick-by-tick feed.</div>
   </div>
 </div></main>
 
@@ -694,9 +632,9 @@ setInterval(()=>{
 function kvStockLogo(t){return t==='HSBK'?'HB':t==='KSPI'?'K':t==='KZAP'?'KZ':t==='KMGZ'?'KM':t==='KCEL'?'KC':'KE'}
 function renderDashboardStocks(){
   const box=document.getElementById('dashboardStocks');
-  if(!box)return;
+  if(!box||!D)return;
   const quotes=(window.kvQuotes||{});
-  box.innerHTML=KV_STOCKS.map(([t,n])=>{const q=quotes[t],s=D?.result?.asset_stats?.[t]||{};const ch=q?.change_pct;return `<div class="kv-stock-row" data-stock="${t}">
+  box.innerHTML=KV_STOCKS.map(([t,n])=>{const q=quotes[t],s=D.result.asset_stats[t];const ch=q?.change_pct;return `<div class="kv-stock-row" data-stock="${t}">
     <div class="kv-stock-logo">${kvStockLogo(t)}</div><div><div class="kv-stock-name">${t}</div><div class="kv-stock-company">${n}</div></div>
     <div class="kv-stock-price"><div>${q?kvFmtPrice(q.price):'—'}</div><div class="kv-stock-change ${ch>0?'up':ch<0?'down':'neutral'}">${q?kvFmtPct(ch):'ожидание'}</div></div>
   </div>`}).join('');
@@ -772,128 +710,21 @@ function drawStockDetail(ticker,range){
   };
   c.onmouseleave=()=>{if(selectedPoint==null)drawStockDetail(ticker,range);else{drawStockDetail(ticker,range);paintPoint(selectedPoint,true)}};
 }
-let kvArchiveRows=[];let kvArchiveMode='current';
-function renderKaseArchive(){
-  const rows=kvArchiveRows||[];
-  const select=document.getElementById('archiveDateSelect');
-  const table=document.getElementById('archiveTablePanel');
-  const current=document.getElementById('archiveCurrent');
-  document.querySelectorAll('.kv-archive-period').forEach(b=>b.classList.toggle('active',b.dataset.archivePeriod===kvArchiveMode));
-  if(kvArchiveMode==='current'){
-    current.style.display='';table.style.display='none';
-    const r=rows[0]||{};
-    ['bid','offer','last','w_aver','high','low'].forEach(k=>{const el=document.getElementById('current'+({bid:'Bid',offer:'Offer',last:'Last',w_aver:'Waver',high:'High',low:'Low'}[k]));if(el)el.textContent=kvEsc(r[k]);});
-  }else{
-    current.style.display='none';table.style.display='';
-    const chosen=select?.value;
-    const filtered=chosen&&chosen!=='all'?rows.filter(r=>r.date_period===chosen):rows;
-    document.getElementById('archiveRows').innerHTML=filtered.length?filtered.map(r=>'<tr>'+['date_period','bid','offer','last','w_aver','high','low','trade','shares','m_kzt','th_usd'].map(k=>'<td>'+kvEsc(r[k])+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="11" class="kv-archive-empty">За выбранный период данных нет.</td></tr>';
-  }
-}
-function setupKaseArchiveControls(){
-  document.querySelectorAll('.kv-archive-period').forEach(b=>b.onclick=()=>{kvArchiveMode=b.dataset.archivePeriod;renderKaseArchive()});
-  const select=document.getElementById('archiveDateSelect');
-  if(select)select.onchange=renderKaseArchive;
-}
-function ensureKaseExtraSections(){
-  if(document.getElementById('kaseExtraSections'))return;
-  const archive=document.getElementById('kaseArchive');
-  if(!archive)return;
-  const wrap=document.createElement('div');
-  wrap.id='kaseExtraSections';
-  wrap.style.cssText='margin-top:18px;display:grid;gap:18px';
-  wrap.innerHTML=`
-    <section class="kv-kase-card">
-      <div class="kv-kase-card-head">
-        <div><h3 style="margin:0">Последние 10 сделок</h3><div id="tradesStatus" class="muted small">KASE public</div></div>
-      </div>
-      <div style="overflow:auto">
-        <table class="kv-archive-table">
-          <thead><tr><th>Дата</th><th>Время</th><th>Цена</th><th>Тренд %</th><th>Объем, шт</th><th>млн KZT</th><th>тыс. USD</th></tr></thead>
-          <tbody id="recentTradesRows"><tr><td colspan="7" class="kv-archive-empty">Загрузка…</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-    <section class="kv-kase-card">
-      <div class="kv-kase-card-head">
-        <div><h3 style="margin:0">Другие ценные бумаги</h3><div class="muted small">Связанные инструменты эмитента по данным KASE</div></div>
-      </div>
-      <div style="overflow:auto">
-        <table class="kv-archive-table">
-          <thead><tr><th>Торговый код</th><th>ISIN</th><th>Площадка</th><th>Сектор</th><th>Категория</th><th>Торги</th><th>Индекс</th></tr></thead>
-          <tbody id="otherSecuritiesRows"><tr><td colspan="7" class="kv-archive-empty">Загрузка…</td></tr></tbody>
-        </table>
-      </div>
-    </section>`;
-  archive.parentNode.insertBefore(wrap,archive.nextSibling);
-}
-function kvEsc(x){return String(x??'—').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 async function openStockDetail(ticker){
   kvDetailTicker=ticker;kvDetailRange=kvDetailRange||'all';
-  const n=KV_STOCKS.find(x=>x[0]===ticker)?.[1]||ticker,s=D?.result?.asset_stats?.[ticker],q=window.kvQuotes?.[ticker];
-  document.getElementById('stockDetailTitle').textContent=ticker;
-  document.getElementById('stockDetailCompany').textContent=n;
-  document.getElementById('stockDetailPrice').textContent=q?kvFmtPrice(q.price):'—';
-  document.getElementById('stockDetailChange').textContent=q?kvFmtPct(q.change_pct):'Последняя цена KASE не получена';
+  const n=KV_STOCKS.find(x=>x[0]===ticker)?.[1]||ticker,s=D?.result?.asset_stats?.[ticker];
+  document.getElementById('stockDetailTitle').textContent=ticker;document.getElementById('stockDetailCompany').textContent=n;
+  document.getElementById('detailReturn').textContent=s?pct(s.annual_return_raw):'—';document.getElementById('detailRisk').textContent=s?pct(s.annual_risk):'—';document.getElementById('detailSample').textContent=s?pct(s.sample_return):'—';
+  const q=window.kvQuotes?.[ticker];document.getElementById('stockDetailPrice').textContent=q?kvFmtPrice(q.price):'—';document.getElementById('stockDetailChange').textContent=q?kvFmtPct(q.change_pct):'Последняя цена KASE не получена';
   document.getElementById('stockDetailChange').className='kv-detail-change '+(q?.change_pct>0?'up':q?.change_pct<0?'down':'neutral');
-  document.getElementById('detailReturn').textContent=s?pct(s.annual_return_raw):'—';
-  document.getElementById('detailRisk').textContent=s?pct(s.annual_risk):'—';
-  document.getElementById('detailSample').textContent=s?pct(s.sample_return):'—';
   document.getElementById('detailSource').textContent=q?'KASE public':'KASE monthly';
-  document.querySelectorAll('.kv-kase-tab').forEach(x=>x.classList.toggle('active',x.dataset.kaseTab==='characteristics'));
-  document.querySelectorAll('.kv-kase-section').forEach(x=>x.style.display=x.id==='kaseCharacteristics'?'':'none');
-  ['secTicker','secIsin','secPlatform','secSector','secCategory','secTrading','secIndex'].forEach(id=>document.getElementById(id).textContent='Загрузка…');
-  setupKaseArchiveControls();
-  ensureKaseExtraSections();\n  document.getElementById('archiveStatus').textContent='Загрузка…';\n  document.getElementById('tradesStatus').textContent='Загрузка…';\n  document.getElementById('recentTradesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Загрузка сделок KASE…</td></tr>';\n  document.getElementById('otherSecuritiesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Загрузка…</td></tr>';
-  document.getElementById('archiveRows').innerHTML='<tr><td colspan="11" class="kv-archive-empty">Загрузка архива KASE…</td></tr>';
   kvOpenModal('stockDetailModal');drawStockDetail(ticker,kvDetailRange);
-  try{
-    const res=await fetch('/api/archive/'+encodeURIComponent(ticker),{cache:'no-store'}),j=await res.json(),sec=j.security||{},rows=j.rows||[];
-    document.getElementById('secTicker').textContent=sec.ticker||ticker;
-    document.getElementById('secIsin').textContent=sec.isin||'—';
-    document.getElementById('secPlatform').textContent=sec.platform||'—';
-    document.getElementById('secSector').textContent=sec.sector||'—';
-    document.getElementById('secCategory').textContent=sec.category||'—';
-    document.getElementById('secTrading').textContent=sec.trading_start||'—';
-    document.getElementById('secIndex').textContent=sec.index||'—';
-    kvArchiveRows=rows;
-    const dateSelect=document.getElementById('archiveDateSelect');
-    const dates=[...new Set(rows.map(r=>r.date_period).filter(Boolean))];
-    if(dateSelect)dateSelect.innerHTML='<option value="all">Все периоды</option>'+dates.map(d=>'<option value="'+kvEsc(d)+'">'+kvEsc(d)+'</option>').join('');
-    document.getElementById('archiveStatus').textContent=rows.length+' строк • KASE public';
-    renderKaseArchive();
-    const trades=j.recent_trades||[];
-    document.getElementById('tradesStatus').textContent=trades.length+' сделок • KASE public';
-    document.getElementById('recentTradesRows').innerHTML=trades.length?trades.map(r=>'<tr><td>'+kvEsc(r.date)+'</td><td>'+kvEsc(r.time)+'</td><td>'+kvEsc(r.price)+'</td><td>'+kvEsc(r.trend_pct)+'</td><td>'+kvEsc(r.shares)+'</td><td>'+kvEsc(r.m_kzt)+'</td><td>'+kvEsc(r.th_usd)+'</td></tr>').join(''):'<tr><td colspan="7" class="kv-archive-empty">Сделки не найдены.</td></tr>';
-    const others=j.other_securities||[];
-    document.getElementById('otherSecuritiesRows').innerHTML=others.length?others.map(r=>'<tr><td><b>'+kvEsc(r.ticker)+'</b></td><td>'+kvEsc(r.isin)+'</td><td>'+kvEsc(r.platform)+'</td><td>'+kvEsc(r.sector)+'</td><td>'+kvEsc(r.category)+'</td><td>'+kvEsc(r.trading_start)+'</td><td>'+kvEsc(r.index)+'</td></tr>').join(''):'<tr><td colspan="7" class="kv-archive-empty">Связанные бумаги не найдены.</td></tr>';
-    const first=rows[0]||{};
-    document.getElementById('tradeLast').textContent=first.last||q?.price||'—';
-    document.getElementById('tradeBid').textContent=first.bid||'—';
-    document.getElementById('tradeOffer').textContent=first.offer||'—';
-    document.getElementById('tradeWaver').textContent=first.w_aver||'—';
-    document.getElementById('tradeHigh').textContent=first.high||'—';
-    document.getElementById('tradeLow').textContent=first.low||'—';
-  }catch(e){
-    document.getElementById('archiveStatus').textContent='Ошибка загрузки';
-    document.getElementById('tradesStatus').textContent='Ошибка загрузки';
-    document.getElementById('recentTradesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Не удалось получить сделки KASE.</td></tr>';
-    document.getElementById('otherSecuritiesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Не удалось получить связанные бумаги KASE.</td></tr>';
-    document.getElementById('archiveRows').innerHTML='<tr><td colspan="11" class="kv-archive-empty">Не удалось получить архив KASE.</td></tr>';
-  }
 }
 document.getElementById('openAllStocks').onclick=()=>{kvOpenModal('stocksModal');renderAllStocks()};
 document.getElementById('closeStocks').onclick=()=>kvCloseModal('stocksModal');
 document.getElementById('closeStockDetail').onclick=()=>kvCloseModal('stockDetailModal');
 document.getElementById('stockSearch').oninput=renderAllStocks;
 document.getElementById('refreshNews').onclick=loadWorldNews;
-document.querySelectorAll('.kv-kase-tab').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.kv-kase-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  const tab=b.dataset.kaseTab;
-  document.getElementById('kaseCharacteristics').style.display=tab==='characteristics'?'':'none';
-  document.getElementById('kaseTrading').style.display=tab==='trading'?'':'none';
-  document.getElementById('kaseArchive').style.display=tab==='archive'?'':'none';
-});
 document.querySelectorAll('.kv-chart-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.kv-chart-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');kvDetailRange=b.dataset.range;drawStockDetail(kvDetailTicker,kvDetailRange)});
 ['stocksModal','stockDetailModal'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)kvCloseModal(id)}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){kvCloseModal('stocksModal');kvCloseModal('stockDetailModal')}});
