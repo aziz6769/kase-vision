@@ -543,16 +543,38 @@ function drawStockDetail(ticker,range){
   document.getElementById('detailLow').textContent=kvFmtPrice(Math.min(...data));
   document.getElementById('detailPeriodStart').textContent=kvFmtPrice(first);
   document.getElementById('detailPeriodEnd').textContent=kvFmtPrice(last);
-  c.onmousemove=e=>{
-    const r=c.getBoundingClientRect(),mxp=Math.max(0,Math.min(data.length-1,Math.round((e.clientX-r.left-p.l)/(w-p.l-p.r)*(data.length-1))));
-    const x=X(mxp),v=data[mxp];
+  let selectedPoint=null;
+  function paintPoint(idx,persistent=false){
+    const x=X(idx),v=data[idx];
     ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.strokeStyle='rgba(180,210,230,.55)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,p.t);ctx.lineTo(x,h-p.b);ctx.stroke();
+    ctx.fillStyle='#27d88a';ctx.beginPath();ctx.arc(x,Y(v),4.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#061625';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle='#dceaf5';ctx.font='12px Arial';
-    const label=(labels[mxp]||'')+'  '+kvFmtPrice(v);ctx.fillText(label,Math.min(x+8,w-170),p.t+16);
+    const label=(labels[idx]||'')+'  '+kvFmtPrice(v);
+    const tx=Math.min(Math.max(x+8,p.l),w-175);
+    ctx.fillText(label,tx,p.t+16);
+    if(persistent){
+      ctx.fillStyle='#8fa7c5';ctx.font='11px Arial';ctx.fillText('Выбрано • нажмите на другую точку',tx,p.t+33);
+    }
     ctx.restore();
+  }
+  function pointFromEvent(e){
+    const r=c.getBoundingClientRect();
+    return Math.max(0,Math.min(data.length-1,Math.round((e.clientX-r.left-p.l)/(w-p.l-p.r)*(data.length-1))));
+  }
+  c.onmousemove=e=>{
+    const idx=pointFromEvent(e);drawStockDetail(ticker,range);paintPoint(idx,selectedPoint===idx);
   };
-  c.onmouseleave=()=>drawStockDetail(ticker,range);
+  c.onclick=e=>{
+    selectedPoint=pointFromEvent(e);
+    drawStockDetail(ticker,range);paintPoint(selectedPoint,true);
+    c.setAttribute('aria-label',ticker+': '+(labels[selectedPoint]||'')+', '+kvFmtPrice(data[selectedPoint]));
+  };
+  c.ontouchstart=e=>{
+    if(e.touches&&e.touches[0]){selectedPoint=pointFromEvent(e.touches[0]);drawStockDetail(ticker,range);paintPoint(selectedPoint,true);}
+  };
+  c.onmouseleave=()=>{if(selectedPoint==null)drawStockDetail(ticker,range);else{drawStockDetail(ticker,range);paintPoint(selectedPoint,true)}};
 }
 async function openStockDetail(ticker){
   kvDetailTicker=ticker;kvDetailRange=kvDetailRange||'all';
