@@ -587,6 +587,50 @@ async def fetch_kase_public(ticker: str):
     return data
 
 
+
+async def fetch_kase_archive(ticker: str):
+    ticker = ticker.upper().strip()
+    if ticker not in NAMES:
+        raise HTTPException(status_code=404, detail="Тикер не поддерживается.")
+    url = f"https://kase.kz/ru/investors/shares/{ticker}"
+    now = datetime.now(timezone.utc)
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0 KASE-Vision/7.0"}) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        tables = soup.find_all("table")
+        summary_rows, security = [], {}
+        for table in tables:
+            rows = []
+            for tr in table.find_all("tr"):
+                cells = [re.sub(r"\\s+", " ", c.get_text(" ", strip=True)) for c in tr.find_all(["th", "td"])]
+                if cells: rows.append(cells)
+            if not rows: continue
+            headers = [x.lower() for x in rows[0]]
+            if "date/period" in headers: summary_rows = rows[1:]
+            required = {"торговый код","isin","площадка","сектор","категория","торги","индекс"}
+            if required.issubset(set(headers)):
+                for row in rows[1:]:
+                    if row and row[0].upper() == ticker:
+                        vals = row + [""] * (7-len(row))
+                        security = {"ticker":vals[0],"isin":vals[1],"platform":vals[2],"sector":vals[3],
+                                     "category":vals[4],"trading_start":vals[5],"index":vals[6]}
+        rows = []
+        for row in summary_rows:
+            if len(row) >= 10:
+                rows.append({"date_period":row[0],"bid":row[1],"offer":row[2],"last":row[3],
+                             "w_aver":row[4],"high":row[5],"low":row[6],"trade":row[7],
+                             "shares":row[8],"m_kzt":row[9],"th_usd":row[10] if len(row)>10 else ""})
+        return {"ticker":ticker,"name":NAMES[ticker],"security":security,"rows":rows,
+                "fetched_at":now.isoformat(),"source":"KASE PUBLIC PAGE","url":url}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Не удалось получить архив KASE для {ticker}: {exc}")
+
+
 def load_research_data():
     if REAL_DATA.exists():
         return pd.read_csv(REAL_DATA, parse_dates=["date"])
@@ -854,6 +898,11 @@ def home():
 @app.get("/api/live/{ticker}")
 async def live(ticker: str):
     return await fetch_kase_public(ticker)
+
+
+@app.get("/api/archive/{ticker}")
+async def archive(ticker: str):
+    return await fetch_kase_archive(ticker)
 
 
 @app.get("/api/live")
