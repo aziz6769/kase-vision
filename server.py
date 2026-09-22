@@ -404,7 +404,10 @@ def calculate(df: pd.DataFrame) -> dict:
     for ticker in assets:
         values = (monthly[ticker] / monthly[ticker].iloc[0]).round(6).tolist()
         normalized.append(
-            {"ticker": ticker, "name": NAMES[ticker], "values": values}
+            {"ticker": ticker, "name": NAMES[ticker], "values": values,
+             "dates": [d.strftime("%Y-%m") for d in monthly.index],
+             "prices": [round(float(v), 4) for v in monthly[ticker].tolist()],
+             "returns": [None] + [round(float(v), 6) for v in monthly[ticker].pct_change().iloc[1:].tolist()]}
         )
 
     state["weights"] = W
