@@ -694,7 +694,7 @@ setInterval(()=>{
 function kvStockLogo(t){return t==='HSBK'?'HB':t==='KSPI'?'K':t==='KZAP'?'KZ':t==='KMGZ'?'KM':t==='KCEL'?'KC':'KE'}
 function renderDashboardStocks(){
   const box=document.getElementById('dashboardStocks');
-  if(!box||!D)return;
+  if(!box)return;
   const quotes=(window.kvQuotes||{});
   box.innerHTML=KV_STOCKS.map(([t,n])=>{const q=quotes[t],s=D.result.asset_stats[t];const ch=q?.change_pct;return `<div class="kv-stock-row" data-stock="${t}">
     <div class="kv-stock-logo">${kvStockLogo(t)}</div><div><div class="kv-stock-name">${t}</div><div class="kv-stock-company">${n}</div></div>
