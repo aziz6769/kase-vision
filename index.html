@@ -100,9 +100,26 @@ canvas{background:#061522;border-color:#183852}
 .kv-panel{background:linear-gradient(145deg,#071b2e,#061525);border:1px solid #174264;border-radius:14px;padding:17px;box-shadow:0 12px 35px #0003}
 .kv-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .kv-panel-head h3{font-size:16px;margin:0}.kv-panel-head button{border:0;background:transparent;color:#56adff;padding:3px 0;font-size:12px}
-.kv-news-item{display:grid;grid-template-columns:48px 1fr 18px;gap:12px;align-items:center;padding:11px 0;border-top:1px solid #143650;cursor:pointer}
-.kv-news-item:first-child{border-top:0}.kv-news-thumb{width:48px;height:48px;border-radius:9px;background:linear-gradient(145deg,#0b426d,#12253a);display:grid;place-items:center;color:#70b9ef;font-size:20px}
-.kv-news-title{font-size:13px;line-height:1.35;color:#e6f0fa}.kv-news-meta{font-size:10px;color:#7894b0;margin-top:4px}.kv-news-arrow{color:#5c91bc;font-size:19px}
+.kv-news-panel{overflow:hidden}
+.kv-news-headline{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#5caeff;font-weight:800}
+.kv-news-live{width:6px;height:6px;border-radius:50%;background:#27d88a;box-shadow:0 0 10px #27d88a}
+.kv-news-refresh{display:flex;align-items:center;gap:6px}
+.kv-news-item{display:grid;grid-template-columns:42px minmax(0,1fr) 16px;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid #143650;cursor:pointer;border-radius:8px;transition:background .16s ease,transform .16s ease}
+.kv-news-item:first-child{border-top:0}
+.kv-news-item:hover{background:#0a2238;transform:translateX(2px)}
+.kv-news-thumb{width:42px;height:42px;border-radius:10px;background:linear-gradient(145deg,#0b426d,#12253a);border:1px solid #1b5278;display:grid;place-items:center;color:#70b9ef;font-size:13px;font-weight:800}
+.kv-news-copy{min-width:0}
+.kv-news-title{font-size:13px;line-height:1.38;color:#eaf3fb;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kv-news-meta{display:flex;align-items:center;gap:7px;font-size:10px;color:#7894b0;margin-top:5px;white-space:nowrap;overflow:hidden}
+.kv-news-source{color:#9fc7e8;font-weight:700}
+.kv-news-sep{opacity:.45}
+.kv-news-topic{padding:2px 5px;border:1px solid #234b68;border-radius:4px;color:#6fb5e8}
+.kv-news-arrow{color:#5c91bc;font-size:20px;transition:transform .16s ease}
+.kv-news-item:hover .kv-news-arrow{transform:translateX(3px)}
+.kv-news-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:9px;border-top:1px solid #12334d;font-size:9px;color:#617f9b}
+.kv-news-footer strong{color:#8eb8d8}
+@media(max-width:900px){.kv-dashboard-grid{grid-template-columns:1fr}.kv-news-title{font-size:12px}}
+
 .kv-stock-row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid #143650;cursor:pointer}
 .kv-stock-row:first-of-type{border-top:0}.kv-stock-logo{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#0d3656;color:#8bc8ff;font-weight:800;font-size:10px}
 .kv-stock-name{font-weight:700;font-size:13px}.kv-stock-company{font-size:10px;color:#7793ad;margin-top:3px}.kv-stock-price{text-align:right;font-size:12px}.kv-stock-change{font-size:11px;margin-top:4px}
@@ -488,13 +505,33 @@ function kvOpenModal(id){const el=document.getElementById(id);if(el){el.classLis
 function kvCloseModal(id){const el=document.getElementById(id);if(el){el.classList.remove('open');el.setAttribute('aria-hidden','true')}}
 function kvFmtPrice(x){return x==null?'—':'₸ '+Number(x).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function kvFmtPct(x){return x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%'}
+function kvNewsTopic(title){
+  const t=(title||'').toLowerCase();
+  if(/ai|artificial intelligence|technology|tech|chip|nvidia/.test(t))return 'AI / TECH';
+  if(/oil|energy|opec|gas|petrol/.test(t))return 'ENERGY';
+  if(/fed|ecb|boj|rate|inflation|interest/.test(t))return 'RATES';
+  if(/china|tariff|trade|trump|ukraine|war|geopolit/.test(t))return 'GLOBAL';
+  return 'MARKETS';
+}
+function kvNewsSourceInitial(source){
+  const s=(source||'News').trim();
+  return s.split(/\\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase().slice(0,2)||'N';
+}
 function kvNewsRender(items){
   const box=document.getElementById('worldNews');
   if(!items||!items.length){box.innerHTML='<div class="muted small">Новости временно недоступны.</div>';return}
-  box.innerHTML=items.map((x,i)=>`<div class="kv-news-item" data-news="${i}">
-    <div class="kv-news-thumb">${i+1}</div><div><div class="kv-news-title">${x.title}</div><div class="kv-news-meta">${x.source||'News'} • ${x.published_at||'сегодня'}</div></div><div class="kv-news-arrow">›</div>
-  </div>`).join('');
-  box.querySelectorAll('[data-news]').forEach(el=>el.onclick=()=>{const n=items[Number(el.dataset.news)];if(n?.url)window.open(n.url,'_blank','noopener')});
+  box.innerHTML=items.slice(0,5).map((x,i)=>`<div class="kv-news-item" data-news="${i}" role="button" tabindex="0">
+    <div class="kv-news-thumb">${kvNewsSourceInitial(x.source)}</div>
+    <div class="kv-news-copy">
+      <div class="kv-news-title">${x.title||'Главное событие мировых рынков'}</div>
+      <div class="kv-news-meta"><span class="kv-news-source">${x.source||'News'}</span><span class="kv-news-sep">•</span><span>${x.published_at||'сегодня'}</span><span class="kv-news-topic">${kvNewsTopic(x.title)}</span></div>
+    </div>
+    <div class="kv-news-arrow">›</div>
+  </div>`).join('')+`<div class="kv-news-footer"><span><strong>5</strong> главных событий дня</span><span>Нажмите на заголовок, чтобы открыть источник ↗</span></div>`;
+  box.querySelectorAll('[data-news]').forEach(el=>{
+    const open=()=>{const n=items[Number(el.dataset.news)];if(n?.url)window.open(n.url,'_blank','noopener')};
+    el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}};
+  });
 }
 const KV_NEWS_FALLBACK=[
   {title:'Nasdaq обновил рекорд на фоне интереса к AI, нефть опустилась ниже $100',source:'Reuters',published_at:'22.09.2026',url:'https://www.reuters.com/world/china/global-markets-wrapup-1-2026-09-22/'},
