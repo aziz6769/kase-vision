@@ -589,46 +589,132 @@ async def fetch_kase_public(ticker: str):
 
 
 async def fetch_kase_archive(ticker: str):
+    """Fetch the public KASE stock page and mirror its visible market tables."""
     ticker = ticker.upper().strip()
     if ticker not in NAMES:
         raise HTTPException(status_code=404, detail="Тикер не поддерживается.")
+
     url = f"https://kase.kz/ru/investors/shares/{ticker}"
     now = datetime.now(timezone.utc)
+
     try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 KASE-Vision/7.0"}) as client:
+        async with httpx.AsyncClient(
+            timeout=15,
+            follow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0 KASE-Vision/7.0"},
+        ) as client:
             response = await client.get(url)
             response.raise_for_status()
+
         soup = BeautifulSoup(response.text, "html.parser")
         tables = soup.find_all("table")
-        summary_rows, security = [], {}
-        for table in tables:
-            rows = []
+        summary_rows, recent_trades, other_securities = [], [], []
+        security = {}
+
+        def table_rows(table):
+            out = []
             for tr in table.find_all("tr"):
-                cells = [re.sub(r"\\s+", " ", c.get_text(" ", strip=True)) for c in tr.find_all(["th", "td"])]
-                if cells: rows.append(cells)
-            if not rows: continue
-            headers = [x.lower() for x in rows[0]]
-            if "date/period" in headers: summary_rows = rows[1:]
-            required = {"торговый код","isin","площадка","сектор","категория","торги","индекс"}
-            if required.issubset(set(headers)):
+                cells = [
+                    re.sub(r"\\s+", " ", c.get_text(" ", strip=True))
+                    for c in tr.find_all(["th", "td"])
+                ]
+                if cells:
+                    out.append(cells)
+            return out
+
+        for table in tables:
+            rows = table_rows(table)
+            if not rows:
+                continue
+
+            headers = [re.sub(r"\\s+", " ", x).strip().lower() for x in rows[0]]
+            joined = " | ".join(headers)
+
+            if "date/period" in headers:
+                summary_rows = rows[1:]
+
+            if {"торговый код", "isin", "площадка", "сектор", "категория", "торги", "индекс"}.issubset(set(headers)):
                 for row in rows[1:]:
                     if row and row[0].upper() == ticker:
-                        vals = row + [""] * (7-len(row))
-                        security = {"ticker":vals[0],"isin":vals[1],"platform":vals[2],"sector":vals[3],
-                                     "category":vals[4],"trading_start":vals[5],"index":vals[6]}
-        rows = []
+                        vals = row + [""] * max(0, 7 - len(row))
+                        security = {
+                            "ticker": vals[0],
+                            "isin": vals[1],
+                            "platform": vals[2],
+                            "sector": vals[3],
+                            "category": vals[4],
+                            "trading_start": vals[5],
+                            "index": vals[6],
+                        }
+                    if row:
+                        vals = row + [""] * max(0, 7 - len(row))
+                        other_securities.append({
+                            "ticker": vals[0],
+                            "isin": vals[1],
+                            "platform": vals[2],
+                            "sector": vals[3],
+                            "category": vals[4],
+                            "trading_start": vals[5],
+                            "index": vals[6],
+                        })
+
+            if "дата сделки" in joined and "время сделки" in joined:
+                for row in rows[1:]:
+                    vals = row + [""] * max(0, 7 - len(row))
+                    recent_trades.append({
+                        "date": vals[0],
+                        "time": vals[1],
+                        "price": vals[2],
+                        "trend_pct": vals[3],
+                        "shares": vals[4],
+                        "m_kzt": vals[5],
+                        "th_usd": vals[6],
+                    })
+
+        archive_rows = []
         for row in summary_rows:
-            if len(row) >= 10:
-                rows.append({"date_period":row[0],"bid":row[1],"offer":row[2],"last":row[3],
-                             "w_aver":row[4],"high":row[5],"low":row[6],"trade":row[7],
-                             "shares":row[8],"m_kzt":row[9],"th_usd":row[10] if len(row)>10 else ""})
-        return {"ticker":ticker,"name":NAMES[ticker],"security":security,"rows":rows,
-                "fetched_at":now.isoformat(),"source":"KASE PUBLIC PAGE","url":url}
+            vals = row + [""] * max(0, 11 - len(row))
+            archive_rows.append({
+                "date_period": vals[0],
+                "bid": vals[1],
+                "offer": vals[2],
+                "last": vals[3],
+                "w_aver": vals[4],
+                "high": vals[5],
+                "low": vals[6],
+                "trade": vals[7],
+                "shares": vals[8],
+                "m_kzt": vals[9],
+                "th_usd": vals[10],
+            })
+
+        # Keep the same order as KASE and remove accidental duplicate rows.
+        seen = set()
+        unique_other = []
+        for item in other_securities:
+            key = tuple(item.values())
+            if key not in seen:
+                seen.add(key)
+                unique_other.append(item)
+
+        return {
+            "ticker": ticker,
+            "name": NAMES[ticker],
+            "security": security,
+            "rows": archive_rows,
+            "recent_trades": recent_trades[:10],
+            "other_securities": unique_other,
+            "fetched_at": now.isoformat(),
+            "source": "KASE PUBLIC PAGE",
+            "url": url,
+        }
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Не удалось получить архив KASE для {ticker}: {exc}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Не удалось получить архив KASE для {ticker}: {exc}",
+        )
 
 
 def load_research_data():
