@@ -546,10 +546,13 @@ function drawStockDetail(ticker,range){
   c.onmousemove=e=>{
     const r=c.getBoundingClientRect(),mxp=Math.max(0,Math.min(data.length-1,Math.round((e.clientX-r.left-p.l)/(w-p.l-p.r)*(data.length-1))));
     const x=X(mxp),v=data[mxp];
-    drawStockDetail(ticker,range);
-    const ctx2=c.getContext('2d');ctx2.setTransform(dpr,0,0,dpr,0,0);ctx2.strokeStyle='rgba(180,210,230,.45)';ctx2.lineWidth=1;ctx2.beginPath();ctx2.moveTo(x,p.t);ctx2.lineTo(x,h-p.b);ctx2.stroke();
-    ctx2.fillStyle='#dceaf5';ctx2.font='12px Arial';ctx2.fillText((labels[mxp]||'')+'  '+kvFmtPrice(v),Math.min(x+8,w-150),p.t+16);
+    ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.strokeStyle='rgba(180,210,230,.55)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,p.t);ctx.lineTo(x,h-p.b);ctx.stroke();
+    ctx.fillStyle='#dceaf5';ctx.font='12px Arial';
+    const label=(labels[mxp]||'')+'  '+kvFmtPrice(v);ctx.fillText(label,Math.min(x+8,w-170),p.t+16);
+    ctx.restore();
   };
+  c.onmouseleave=()=>drawStockDetail(ticker,range);
 }
 async function openStockDetail(ticker){
   kvDetailTicker=ticker;kvDetailRange=kvDetailRange||'all';
