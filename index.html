@@ -225,7 +225,7 @@ body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-
   </div>
   <div class="kv-dashboard-grid">
     <div class="kv-panel" id="dashboardNews">
-      <div class="kv-panel-head"><h3>🌐 Новости мировых рынков</h3><button id="refreshNews">Обновить</button></div>
+      <div class="kv-panel-head"><div><h3>🌐 Новости мировых рынков</h3><div id="newsUpdated" class="kv-news-meta">5 главных событий • обновляется каждый день</div></div><button id="refreshNews">Обновить</button></div>
       <div id="worldNews"><div class="muted small">Загрузка главных новостей…</div></div>
     </div>
     <div class="kv-panel">
@@ -492,9 +492,18 @@ function kvNewsRender(items){
 }
 async function loadWorldNews(){
   const box=document.getElementById('worldNews');box.innerHTML='<div class="muted small">Обновляю главные новости…</div>';
-  try{const res=await fetch('/api/news',{cache:'no-store'});const j=await res.json();kvNewsItems=j.items||[];kvNewsRender(kvNewsItems)}
-  catch(e){box.innerHTML='<div class="muted small">Не удалось обновить новости.</div>'}
+  try{
+    const res=await fetch('/api/news',{cache:'no-store'});const j=await res.json();
+    kvNewsItems=j.items||[];kvNewsRender(kvNewsItems);
+    const u=document.getElementById('newsUpdated');
+    if(u)u.textContent=j.updated_at?'Обновлено '+new Date(j.updated_at).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' • 5 главных событий':'Обновляется каждый день';
+  }catch(e){box.innerHTML='<div class="muted small">Не удалось обновить новости.</div>'}
 }
+let kvNewsDay=new Date().toLocaleDateString('en-CA');
+setInterval(()=>{
+  const day=new Date().toLocaleDateString('en-CA');
+  if(day!==kvNewsDay){kvNewsDay=day;loadWorldNews();}
+},30*60*1000);
 function kvStockLogo(t){return t==='HSBK'?'HB':t==='KSPI'?'K':t==='KZAP'?'KZ':t==='KMGZ'?'KM':t==='KCEL'?'KC':'KE'}
 function renderDashboardStocks(){
   const box=document.getElementById('dashboardStocks');
