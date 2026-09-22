@@ -226,7 +226,13 @@ body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-
   <div class="kv-dashboard-grid">
     <div class="kv-panel" id="dashboardNews">
       <div class="kv-panel-head"><div><h3>🌐 Новости мировых рынков</h3><div id="newsUpdated" class="kv-news-meta">5 главных событий • обновляется каждый день</div></div><button id="refreshNews">Обновить</button></div>
-      <div id="worldNews"><div class="muted small">Загрузка главных новостей…</div></div>
+      <div id="worldNews">
+        <div class="kv-news-item" data-news-static="0"><div class="kv-news-thumb">1</div><div><div class="kv-news-title">Nasdaq обновил рекорд на фоне интереса к AI, нефть опустилась ниже $100</div><div class="kv-news-meta">Reuters • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
+        <div class="kv-news-item" data-news-static="1"><div class="kv-news-thumb">2</div><div><div class="kv-news-title">Американские акции держатся около исторических максимумов, рынки следят за нефтью</div><div class="kv-news-meta">AP • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
+        <div class="kv-news-item" data-news-static="2"><div class="kv-news-thumb">3</div><div><div class="kv-news-title">Торговые переговоры США и Китая, тарифы, AI и энергетика остаются в центре внимания рынков</div><div class="kv-news-meta">The Wall Street Journal • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
+        <div class="kv-news-item" data-news-static="3"><div class="kv-news-thumb">4</div><div><div class="kv-news-title">Снижение цены нефти ниже $100 влияет на ожидания по инфляции и мировым рынкам</div><div class="kv-news-meta">The Guardian • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
+        <div class="kv-news-item" data-news-static="4"><div class="kv-news-thumb">5</div><div><div class="kv-news-title">Рост AI-сектора поддерживает азиатские рынки, внимание инвесторов остаётся на инфляции</div><div class="kv-news-meta">ABC News • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
+      </div>
     </div>
     <div class="kv-panel">
       <div class="kv-panel-head"><h3>▥ Наши акции</h3><button class="kv-all-btn" id="openAllStocks">Все →</button></div>
@@ -497,6 +503,7 @@ const KV_NEWS_FALLBACK=[
   {title:'Снижение цены нефти ниже $100 влияет на ожидания по инфляции и мировым рынкам',source:'The Guardian',published_at:'22.09.2026',url:'https://www.theguardian.com/business/live/2026/sep/22/uk-government-borrowing-august-fiscal-straightjacket-bond-vigilantes-assemble'},
   {title:'Рост AI-сектора поддерживает азиатские рынки, внимание инвесторов остаётся на инфляции',source:'ABC News',published_at:'22.09.2026',url:'https://www.abc.net.au/news/2026-09-22/asx-markets-business-live-news/107179814'}
 ];
+document.querySelectorAll('[data-news-static]').forEach(el=>el.onclick=()=>{const n=KV_NEWS_FALLBACK[Number(el.dataset.newsStatic)];if(n?.url)window.open(n.url,'_blank','noopener')});
 async function loadWorldNews(){
   const box=document.getElementById('worldNews');box.innerHTML='<div class="muted small">Обновляю главные новости…</div>';
   try{
