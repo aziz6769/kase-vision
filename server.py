@@ -734,69 +734,109 @@ async def save_preferences(request: Request):
     return {"user": public_user(updated)}
 
 
-NEWS_TTL = 15 * 60
-news_cache = {"fetched_at": None, "items": []}
+# One editorial-style set of five global headlines per Almaty calendar day.
+# Public RSS indexes are used; each card remains clickable to the publisher/index URL.
+NEWS_TTL = 24 * 60 * 60
+news_cache = {"day": None, "fetched_at": None, "items": []}
+
+NEWS_FEEDS = [
+    "https://news.google.com/rss/search?q=global%20markets%20economy%20finance&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=central%20banks%20inflation%20interest%20rates&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=oil%20energy%20global%20markets&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=technology%20AI%20global%20business&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=world%20trade%20global%20economy%20geopolitics&hl=en-US&gl=US&ceid=US:en",
+]
+
+NEWS_SOURCE_WEIGHT = {
+    "Reuters": 8, "Associated Press": 7, "BBC": 6, "Bloomberg": 6,
+    "Financial Times": 6, "CNBC": 5, "Al Jazeera": 4,
+}
+NEWS_TOPIC_WEIGHT = {
+    "fed": 5, "federal reserve": 5, "ecb": 5, "bank of japan": 5,
+    "interest rate": 5, "inflation": 5, "tariff": 4, "trade": 4,
+    "oil": 4, "energy": 4, "nasdaq": 4, "s&p 500": 4, "stocks": 3,
+    "markets": 3, "economy": 3, "ai": 3, "artificial intelligence": 3,
+    "china": 3, "united states": 2, "europe": 2,
+}
+
+def _almaty_day():
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("Asia/Almaty")).date().isoformat()
+
+def _news_score(item):
+    title = item.get("title", "").lower()
+    score = NEWS_SOURCE_WEIGHT.get(item.get("source", ""), 1)
+    score += sum(weight for phrase, weight in NEWS_TOPIC_WEIGHT.items() if phrase in title)
+    try:
+        from email.utils import parsedate_to_datetime
+        published = parsedate_to_datetime(item.get("published_at") or "")
+        age_hours = max(0.0, (datetime.now(timezone.utc) - published.astimezone(timezone.utc)).total_seconds() / 3600)
+        score += max(0.0, 10.0 - min(age_hours, 10.0))
+    except Exception:
+        pass
+    return score
 
 async def fetch_world_news():
     now = datetime.now(timezone.utc)
-    cached_at = news_cache.get("fetched_at")
-    if cached_at and (now - cached_at).total_seconds() < NEWS_TTL and news_cache.get("items"):
+    today = _almaty_day()
+    if news_cache.get("day") == today and news_cache.get("items"):
         return news_cache["items"]
 
-    # Google News RSS is used only as a public news index. The returned item
-    # links point to the publisher through Google News redirects.
-    feeds = [
-        "https://news.google.com/rss/search?q=global%20stock%20market%20finance&hl=en-US&gl=US&ceid=US:en",
-        "https://news.google.com/rss/search?q=S%26P%20500%20NASDAQ%20markets&hl=en-US&gl=US&ceid=US:en",
-    ]
     items = []
     seen = set()
-
     async with httpx.AsyncClient(
         timeout=10,
         follow_redirects=True,
-        headers={"User-Agent": "Mozilla/5.0 KASE-Vision/8.0"},
+        headers={"User-Agent": "Mozilla/5.0 KASE-Vision-News/1.0"},
     ) as client:
-        for feed_url in feeds:
+        results = await asyncio.gather(
+            *(client.get(url) for url in NEWS_FEEDS),
+            return_exceptions=True,
+        )
+        for response in results:
+            if isinstance(response, Exception):
+                continue
             try:
-                response = await client.get(feed_url)
                 response.raise_for_status()
-                root = BeautifulSoup(response.text, "html.parser")
+                root = BeautifulSoup(response.text, "xml")
                 for item in root.find_all("item"):
-                    title = item.find("title")
-                    link = item.find("link")
-                    source = item.find("source")
-                    pub = item.find("pubDate")
+                    title, link = item.find("title"), item.find("link")
+                    source, pub = item.find("source"), item.find("pubDate")
                     if not title or not link:
                         continue
                     title_text = title.get_text(" ", strip=True)
-                    key = re.sub(r"\W+", " ", title_text.lower()).strip()
+                    source_text = source.get_text(" ", strip=True) if source else "News"
+                    key = re.sub(r"[^a-z0-9]+", " ", title_text.lower()).strip()
                     if not key or key in seen:
                         continue
                     seen.add(key)
                     items.append({
                         "title": title_text,
                         "url": link.get_text(strip=True),
-                        "source": source.get_text(" ", strip=True) if source else "News",
+                        "source": source_text,
                         "published_at": pub.get_text(" ", strip=True) if pub else None,
                     })
             except Exception:
                 continue
 
-    # Prefer recent items when dates are parseable, then cap at five headlines.
-    def news_time(x):
-        try:
-            from email.utils import parsedate_to_datetime
-            return parsedate_to_datetime(x["published_at"]).timestamp()
-        except Exception:
-            return 0
+    # Rank by publisher, market relevance and freshness, while avoiding five
+    # near-identical stories about the same topic.
+    items.sort(key=_news_score, reverse=True)
+    selected, selected_topics = [], []
+    for item in items:
+        title = item["title"].lower()
+        topic = next((p for p in NEWS_TOPIC_WEIGHT if p in title), None)
+        if topic and topic in selected_topics:
+            continue
+        selected.append(item)
+        if topic:
+            selected_topics.append(topic)
+        if len(selected) == 5:
+            break
 
-    items.sort(key=news_time, reverse=True)
-    items = items[:5]
-    if items:
-        news_cache["fetched_at"] = now
-        news_cache["items"] = items
-    return items
+    if selected:
+        news_cache.update({"day": today, "fetched_at": now, "items": selected})
+    return selected or news_cache.get("items", [])
 
 @app.get("/api/news")
 async def api_news():
