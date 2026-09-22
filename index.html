@@ -141,6 +141,62 @@ body.kv-section-mode #dashboard{display:none!important}
 body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-side-link[data-side="dashboard"]{ }
 
 .kv-detail-period-row{display:flex;justify-content:space-between;align-items:end;padding:12px 0;border-top:1px solid #163852;border-bottom:1px solid #163852}.kv-detail-period-row span,.kv-detail-range-stats span{display:block;color:#7794af;font-size:12px;margin-bottom:4px}.kv-detail-period-row b{font-size:14px}.kv-detail-period-change{font-size:16px}.kv-detail-range-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 0}.kv-detail-range-stats b{font-size:14px}.kv-detail-chart{height:360px!important;cursor:crosshair}
+/* KASE-inspired light market terminal */
+:root{--bg:#eef1f4;--card:#fff;--card2:#f7f8fa;--text:#20242b;--muted:#707783;--line:#d9dde2;--blue:#1f4f86;--green:#07883b;--red:#e53935}
+body{background:#eef1f4;color:#20242b}
+header{background:rgba(255,255,255,.96);border-bottom:1px solid #d9dde2;box-shadow:0 1px 8px rgba(20,30,40,.05)}
+nav{height:78px;padding:0 28px 0 230px;gap:24px}
+nav b{font-size:22px;color:#30353b;letter-spacing:.06em}
+nav b:after{display:none}
+nav a{color:#444a52;font-size:13px}
+nav a:hover{color:#07883b}
+.kv-user-name{color:#343a40}
+.kv-logout{background:#fff;color:#343a40;border-color:#cfd5db}
+.wrap{background:#eef1f4;padding:28px 34px 70px 230px}
+.kv-sidebar{top:78px;background:#fff;border-right:1px solid #d9dde2;padding:20px 13px}
+.kv-side-brand{color:#222;padding-bottom:20px}
+.kv-side-group{color:#8b929b}
+.kv-side-link{color:#555d67}
+.kv-side-link:hover,.kv-side-link.active{background:#e8f5ee;color:#087f5b}
+.kv-side-icon{color:#087f5b}
+.kv-side-note{background:#f6f8f9;border-color:#d8e0e5;color:#68747e}
+.kv-dashboard-head{align-items:center;margin-bottom:16px}
+.eyebrow{color:#1f4f86}
+.kv-dashboard-title{font-size:27px;color:#252a31}
+.kv-dashboard-sub{color:#707783}
+.badge{background:#e8f7ef;color:#087f5b;border:1px solid #ccebd9}
+.kv-panel{background:#fff;border:1px solid #d9dde2;border-radius:10px;padding:16px;box-shadow:0 2px 12px rgba(25,35,45,.05)}
+.kv-panel-head h3{color:#20242b}
+.kv-panel-head button{color:#087f5b}
+.kv-dashboard-grid{grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr);gap:14px}
+.kv-news-hero{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.8fr);min-height:390px;overflow:hidden;border:1px solid #d9dde2;border-radius:10px;background:#fff}
+.kv-news-featured{position:relative;min-height:390px;padding:28px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;background:linear-gradient(145deg,#183b59 0%,#102b43 45%,#0b1d2d 100%);overflow:hidden}
+.kv-news-featured:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 25%,rgba(42,153,99,.35),transparent 30%),linear-gradient(140deg,transparent 25%,rgba(0,0,0,.22));}
+.kv-news-featured:after{content:"KASE  •  GLOBAL MARKETS";position:absolute;right:20px;top:22px;font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.6)}
+.kv-news-featured>*{position:relative;z-index:1}
+.kv-news-featured .kv-news-title{font-size:27px;line-height:1.12;color:#fff;display:block;max-width:680px}
+.kv-news-featured .kv-news-meta{margin-top:13px;color:#c9d7e4}
+.kv-news-featured .kv-news-topic{border-color:rgba(255,255,255,.25);color:#d7f2e3;background:rgba(0,0,0,.12)}
+.kv-news-featured .kv-news-thumb{width:54px;height:54px;margin-bottom:auto;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;font-size:16px}
+.kv-news-side{padding:8px 16px;background:#fff}
+.kv-news-side .kv-news-item{grid-template-columns:54px minmax(0,1fr) 10px;padding:13px 0;border-top:1px solid #e0e3e7;border-radius:0}
+.kv-news-side .kv-news-item:first-child{border-top:0}
+.kv-news-side .kv-news-item:hover{background:#f5f8fa;transform:none}
+.kv-news-side .kv-news-thumb{width:54px;height:54px;background:#edf3f7;border:1px solid #d7e1e8;color:#315d7d}
+.kv-news-side .kv-news-title{font-size:12px;color:#30363d}
+.kv-news-side .kv-news-meta{color:#7b848e}
+.kv-news-footer{background:#fff;color:#858d96;border-color:#e0e3e7}
+.kv-news-source{color:#3d566d}
+.kv-news-topic{border-color:#d6e2ea;color:#47718f;background:#f7fafc}
+.kv-stock-row{border-color:#e0e3e7;padding:13px 0}
+.kv-stock-logo{background:#eaf4f7;color:#27617f}
+.kv-stock-company{color:#7c858e}
+.kv-stock-price{color:#252a31}
+.kv-market-strip{gap:10px}
+.kv-market-metric{background:#fff;border-color:#d9dde2}
+.kv-market-label{color:#707783}
+.kv-market-value{color:#20242b}
+.kv-all-btn{color:#087f5b!important}
 </style>
 </head>
 <body class="kv-locked">
@@ -241,19 +297,15 @@ body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-
     <div class="badge"><i class="kv-dot"></i> KASE PUBLIC DATA</div>
   </div>
   <div class="kv-dashboard-grid">
-    <div class="kv-panel" id="dashboardNews">
-      <div class="kv-panel-head"><div><h3>🌐 Новости мировых рынков</h3><div id="newsUpdated" class="kv-news-meta">5 главных событий • обновляется каждый день</div></div><button id="refreshNews">Обновить</button></div>
-      <div id="worldNews">
-        <div class="kv-news-item" data-news-static="0"><div class="kv-news-thumb">R</div><div class="kv-news-copy"><div class="kv-news-title">Nasdaq обновил рекорд на фоне интереса к AI, нефть опустилась ниже $100</div><div class="kv-news-meta"><span class="kv-news-source">Reuters</span><span class="kv-news-sep">•</span><span>22.09.2026</span><span class="kv-news-topic">MARKETS</span></div></div><div class="kv-news-arrow">›</div></div>
-        <div class="kv-news-item" data-news-static="1"><div class="kv-news-thumb">AP</div><div class="kv-news-copy"><div class="kv-news-title">Американские акции держатся около исторических максимумов, рынки следят за нефтью</div><div class="kv-news-meta"><span class="kv-news-source">AP</span><span class="kv-news-sep">•</span><span>22.09.2026</span><span class="kv-news-topic">MARKETS</span></div></div><div class="kv-news-arrow">›</div></div>
-        <div class="kv-news-item" data-news-static="2"><div class="kv-news-thumb">WS</div><div class="kv-news-copy"><div class="kv-news-title">Торговые переговоры США и Китая, тарифы, AI и энергетика остаются в центре внимания рынков</div><div class="kv-news-meta"><span class="kv-news-source">The Wall Street Journal</span><span class="kv-news-sep">•</span><span>22.09.2026</span><span class="kv-news-topic">GLOBAL</span></div></div><div class="kv-news-arrow">›</div></div>
-        <div class="kv-news-item" data-news-static="3"><div class="kv-news-thumb">TG</div><div class="kv-news-copy"><div class="kv-news-title">Снижение цены нефти ниже $100 влияет на ожидания по инфляции и мировым рынкам</div><div class="kv-news-meta"><span class="kv-news-source">The Guardian</span><span class="kv-news-sep">•</span><span>22.09.2026</span><span class="kv-news-topic">ENERGY</span></div></div><div class="kv-news-arrow">›</div></div>
-        <div class="kv-news-item" data-news-static="4"><div class="kv-news-thumb">ABC</div><div class="kv-news-copy"><div class="kv-news-title">Рост AI-сектора поддерживает азиатские рынки, внимание инвесторов остаётся на инфляции</div><div class="kv-news-meta"><span class="kv-news-source">ABC News</span><span class="kv-news-sep">•</span><span>22.09.2026</span><span class="kv-news-topic">AI / TECH</span></div></div><div class="kv-news-arrow">›</div></div>
-        <div class="kv-news-footer"><span><strong>5</strong> главных событий дня</span><span>Нажмите на заголовок, чтобы открыть источник ↗</span></div>
-      </div></div>
+    <div class="kv-panel" id="dashboardNews" style="padding:12px">
+      <div class="kv-panel-head" style="padding:4px 5px 10px">
+        <div><h3>🌐 Глобальные новости</h3><div id="newsUpdated" class="kv-news-meta">5 главных событий • обновляется каждый день</div></div>
+        <button id="refreshNews">Обновить ↻</button>
+      </div>
+      <div id="worldNews"></div>
     </div>
     <div class="kv-panel">
-      <div class="kv-panel-head"><h3>▥ Наши акции</h3><button class="kv-all-btn" id="openAllStocks">Все →</button></div>
+      <div class="kv-panel-head"><h3>Акции KASE</h3><button class="kv-all-btn" id="openAllStocks">Все →</button></div>
       <div id="dashboardStocks"></div>
     </div>
   </div>
@@ -520,15 +572,22 @@ function kvNewsSourceInitial(source){
 }
 function kvNewsRender(items){
   const box=document.getElementById('worldNews');
-  if(!items||!items.length){box.innerHTML='<div class="muted small">Новости временно недоступны.</div>';return}
-  box.innerHTML=items.slice(0,5).map((x,i)=>`<div class="kv-news-item" data-news="${i}" role="button" tabindex="0">
-    <div class="kv-news-thumb">${kvNewsSourceInitial(x.source)}</div>
-    <div class="kv-news-copy">
-      <div class="kv-news-title">${x.title||'Главное событие мировых рынков'}</div>
-      <div class="kv-news-meta"><span class="kv-news-source">${x.source||'News'}</span><span class="kv-news-sep">•</span><span>${x.published_at||'сегодня'}</span><span class="kv-news-topic">${kvNewsTopic(x.title)}</span></div>
+  if(!items||!items.length){box.innerHTML='<div class="muted small" style="padding:20px">Новости временно недоступны.</div>';return}
+  const featured=items[0], rest=items.slice(1,5);
+  const featuredHtml=`<div class="kv-news-hero">
+    <div class="kv-news-featured" data-news="0" role="button" tabindex="0">
+      <div class="kv-news-thumb">${kvNewsSourceInitial(featured.source)}</div>
+      <div class="kv-news-title">${featured.title||'Главное событие мировых рынков'}</div>
+      <div class="kv-news-meta"><span class="kv-news-source">${featured.source||'News'}</span><span class="kv-news-sep">•</span><span>${featured.published_at||'сегодня'}</span><span class="kv-news-topic">${kvNewsTopic(featured.title)}</span></div>
     </div>
-    <div class="kv-news-arrow">›</div>
-  </div>`).join('')+`<div class="kv-news-footer"><span><strong>5</strong> главных событий дня</span><span>Нажмите на заголовок, чтобы открыть источник ↗</span></div>`;
+    <div class="kv-news-side">${rest.map((x,j)=>`<div class="kv-news-item" data-news="${j+1}" role="button" tabindex="0">
+      <div class="kv-news-thumb">${kvNewsSourceInitial(x.source)}</div>
+      <div class="kv-news-copy"><div class="kv-news-title">${x.title||''}</div><div class="kv-news-meta"><span class="kv-news-source">${x.source||'News'}</span><span class="kv-news-sep">•</span><span>${x.published_at||'сегодня'}</span></div></div>
+      <div class="kv-news-arrow">›</div>
+    </div>`).join('')}
+    </div>
+  </div>`;
+  box.innerHTML=featuredHtml+`<div class="kv-news-footer"><span><strong>5</strong> главных событий дня</span><span>Нажмите на новость, чтобы открыть источник ↗</span></div>`;
   box.querySelectorAll('[data-news]').forEach(el=>{
     const open=()=>{const n=items[Number(el.dataset.news)];if(n?.url)window.open(n.url,'_blank','noopener')};
     el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}};
