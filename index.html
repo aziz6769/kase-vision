@@ -122,6 +122,8 @@ canvas{background:#061522;border-color:#183852}
 body.kv-home-mode main>section:not(#dashboard){display:none!important}
 body.kv-section-mode #dashboard{display:none!important}
 body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-side-link[data-side="dashboard"]{ }
+
+.kv-detail-period-row{display:flex;justify-content:space-between;align-items:end;padding:12px 0;border-top:1px solid #163852;border-bottom:1px solid #163852}.kv-detail-period-row span,.kv-detail-range-stats span{display:block;color:#7794af;font-size:12px;margin-bottom:4px}.kv-detail-period-row b{font-size:14px}.kv-detail-period-change{font-size:16px}.kv-detail-range-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 0}.kv-detail-range-stats b{font-size:14px}.kv-detail-chart{height:360px!important;cursor:crosshair}
 </style>
 </head>
 <body class="kv-locked">
@@ -269,8 +271,10 @@ body.kv-home-mode .kv-side-link[data-side="dashboard"],body.kv-section-mode .kv-
       <div><div id="stockDetailTitle" class="kv-detail-symbol">HSBK</div><div id="stockDetailCompany" class="kv-detail-company">Halyk Bank</div><div id="stockDetailExchange" class="kv-detail-company">KASE • KZT</div></div>
       <div><div id="stockDetailPrice" class="kv-detail-price">—</div><div id="stockDetailChange" class="kv-detail-change">—</div></div>
     </div>
-    <div class="kv-chart-tabs"><button class="kv-chart-tab active" data-range="12">1 г.</button><button class="kv-chart-tab" data-range="24">2 г.</button><button class="kv-chart-tab" data-range="60">5 г.</button><button class="kv-chart-tab" data-range="all">Все</button></div>
+    <div class="kv-chart-tabs"><button class="kv-chart-tab" data-range="3">3 мес.</button><button class="kv-chart-tab" data-range="6">6 мес.</button><button class="kv-chart-tab" data-range="12">1 г.</button><button class="kv-chart-tab" data-range="24">2 г.</button><button class="kv-chart-tab" data-range="all">Вся история</button></div>
     <canvas id="stockDetailChart" class="kv-detail-chart"></canvas>
+    <div class="kv-detail-period-row"><div><span>Период</span><b id="detailPeriod">—</b></div><strong id="detailPeriodChange" class="kv-detail-period-change">—</strong></div>
+    <div class="kv-detail-range-stats"><div><span>Начало</span><b id="detailPeriodStart">—</b></div><div><span>Максимум</span><b id="detailHigh">—</b></div><div><span>Минимум</span><b id="detailLow">—</b></div><div><span>Конец</span><b id="detailPeriodEnd">—</b></div></div>
     <div class="kv-detail-stats">
       <div class="kv-detail-stat"><span>Оценка доходности / год</span><b id="detailReturn">—</b></div>
       <div class="kv-detail-stat"><span>Риск σ</span><b id="detailRisk">—</b></div>
@@ -511,18 +515,41 @@ function renderAllStocks(){
   document.querySelectorAll('#allStocksList [data-stock]').forEach(el=>el.onclick=()=>openStockDetail(el.dataset.stock));
 }
 function drawStockDetail(ticker,range){
-  if(!D)return;const s=D.result.normalized.find(x=>x.ticker===ticker);if(!s)return;
-  const stats=D.result.asset_stats[ticker],vals=s.values.slice();let n=vals.length;
-  if(range!=='all')n=Math.min(Number(range),vals.length);const data=vals.slice(-n);
-  const c=document.getElementById('stockDetailChart'),rect=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1,w=rect.width||700,h=300;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
-  const p={l:45,r:20,t:18,b:28},mn=Math.min(...data),mx=Math.max(...data),span=mx-mn||1,X=i=>p.l+(w-p.l-p.r)*i/Math.max(1,data.length-1),Y=v=>p.t+(mx-v)/span*(h-p.t-p.b);
-  ctx.strokeStyle='#163852';ctx.lineWidth=1;for(let i=0;i<5;i++){const y=p.t+(h-p.t-p.b)*i/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(w-p.r,y);ctx.stroke()}
-  ctx.beginPath();data.forEach((v,i)=>i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v)));ctx.strokeStyle='#27d88a';ctx.lineWidth=2.2;ctx.stroke();
-  ctx.lineTo(X(data.length-1),h-p.b);ctx.lineTo(X(0),h-p.b);ctx.closePath();ctx.fillStyle='rgba(39,216,138,.10)';ctx.fill();
-  ctx.fillStyle='#7794af';ctx.font='11px Arial';ctx.fillText(mx.toFixed(2)+'×',7,24);ctx.fillText(mn.toFixed(2)+'×',7,h-32);ctx.fillText('нормированная цена',p.l,h-8);
-  document.getElementById('detailReturn').textContent=pct(stats.annual_return_raw);
-  document.getElementById('detailRisk').textContent=pct(stats.annual_risk);
-  document.getElementById('detailSample').textContent=pct(stats.sample_return);
+  if(!D)return;
+  const s=D.result.normalized.find(x=>x.ticker===ticker);if(!s)return;
+  const stats=D.result.asset_stats[ticker];
+  const prices=s.prices||[];
+  const dates=s.dates||[];
+  if(!prices.length)return;
+  let n=prices.length;
+  if(range!=='all')n=Math.min(Number(range),prices.length);
+  const start=prices.length-n, data=prices.slice(start), labels=dates.slice(start);
+  const c=document.getElementById('stockDetailChart'),rect=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1,w=Math.max(rect.width||760,320),h=360;
+  c.width=w*dpr;c.height=h*dpr;c.style.height=h+'px';
+  const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const p={l:62,r:22,t:28,b:48},mn=Math.min(...data),mx=Math.max(...data),span=mx-mn||1;
+  const X=i=>p.l+(w-p.l-p.r)*i/Math.max(1,data.length-1),Y=v=>p.t+(mx-v)/span*(h-p.t-p.b);
+  ctx.font='12px Arial';ctx.strokeStyle='#173a55';ctx.lineWidth=1;
+  for(let i=0;i<5;i++){const y=p.t+(h-p.t-p.b)*i/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(w-p.r,y);ctx.stroke();ctx.fillStyle='#6f8ba3';ctx.fillText((mx-(span*i/4)).toLocaleString('ru-RU',{maximumFractionDigits:2}),8,y+4)}
+  for(let i=0;i<Math.min(6,data.length);i++){const idx=Math.round(i*(data.length-1)/Math.max(1,Math.min(5,data.length-1)));const x=X(idx);ctx.fillStyle='#6f8ba3';ctx.fillText(labels[idx]||'',x-24,h-18)}
+  ctx.beginPath();data.forEach((v,i)=>i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v)));ctx.lineTo(X(data.length-1),h-p.b);ctx.lineTo(X(0),h-p.b);ctx.closePath();ctx.fillStyle='rgba(39,216,138,.08)';ctx.fill();
+  for(let i=1;i<data.length;i++){ctx.beginPath();ctx.moveTo(X(i-1),Y(data[i-1]));ctx.lineTo(X(i),Y(data[i]));ctx.strokeStyle=data[i]>=data[i-1]?'#27d88a':'#ff5d68';ctx.lineWidth=2.5;ctx.stroke()}
+  ctx.fillStyle='#dceaf5';ctx.font='bold 12px Arial';ctx.fillText('Цена, ₸',p.l,15);
+  const first=data[0],last=data[data.length-1],chg=(last/first-1)*100;
+  document.getElementById('detailPeriod').textContent=(labels[0]||'')+' — '+(labels[labels.length-1]||'');
+  document.getElementById('detailPeriodChange').textContent=(chg>=0?'+':'')+chg.toFixed(2)+'% за период';
+  document.getElementById('detailPeriodChange').className='kv-detail-period-change '+(chg>=0?'up':'down');
+  document.getElementById('detailHigh').textContent=kvFmtPrice(Math.max(...data));
+  document.getElementById('detailLow').textContent=kvFmtPrice(Math.min(...data));
+  document.getElementById('detailPeriodStart').textContent=kvFmtPrice(first);
+  document.getElementById('detailPeriodEnd').textContent=kvFmtPrice(last);
+  c.onmousemove=e=>{
+    const r=c.getBoundingClientRect(),mxp=Math.max(0,Math.min(data.length-1,Math.round((e.clientX-r.left-p.l)/(w-p.l-p.r)*(data.length-1))));
+    const x=X(mxp),v=data[mxp];
+    drawStockDetail(ticker,range);
+    const ctx2=c.getContext('2d');ctx2.setTransform(dpr,0,0,dpr,0,0);ctx2.strokeStyle='rgba(180,210,230,.45)';ctx2.lineWidth=1;ctx2.beginPath();ctx2.moveTo(x,p.t);ctx2.lineTo(x,h-p.b);ctx2.stroke();
+    ctx2.fillStyle='#dceaf5';ctx2.font='12px Arial';ctx2.fillText((labels[mxp]||'')+'  '+kvFmtPrice(v),Math.min(x+8,w-150),p.t+16);
+  };
 }
 async function openStockDetail(ticker){
   kvDetailTicker=ticker;kvDetailRange=kvDetailRange||'all';
