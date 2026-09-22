@@ -568,21 +568,19 @@ $('calcBudget').onclick=async()=>{await loadAllocation();await saveUserPreferenc
 async function startKaseVisionApp(){
   if(appStarted)return;
   appStarted=true;
-  // The stock list must not depend on the heavy analytics endpoint.
-  // Render the six KASE stocks immediately, then enrich them with live prices.
-  if(typeof renderDashboardStocks==='function')renderDashboardStocks();
-  refreshLive().catch(e=>console.error('KASE live data failed',e));
-  if(!liveTimer)liveTimer=setInterval(()=>refreshLive().catch(()=>{}),25000);
   try{
-    const res=await fetch('/api/analysis',{cache:'no-store'});
+    const res=await fetch('/api/analysis',{cache:'force-cache'});
     if(!res.ok)throw new Error('analysis');
     D=await res.json();
     render();
+    await refreshLive();
     await loadAllocation();
+    if(!liveTimer)liveTimer=setInterval(refreshLive,25000);
     if(typeof loadWorldNews==='function')loadWorldNews();
+    if(typeof renderDashboardStocks==='function')renderDashboardStocks();
   }catch(e){
-    console.error('KASE analytics startup failed',e);
-    // Keep the dashboard and stock list visible even when analytics are unavailable.
+    appStarted=false;
+    console.error('KASE Vision startup failed',e);
   }
 }
 function stopKaseVisionApp(){
