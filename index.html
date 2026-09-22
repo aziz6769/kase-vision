@@ -755,6 +755,39 @@ function drawStockDetail(ticker,range){
   };
   c.onmouseleave=()=>{if(selectedPoint==null)drawStockDetail(ticker,range);else{drawStockDetail(ticker,range);paintPoint(selectedPoint,true)}};
 }
+function ensureKaseExtraSections(){
+  if(document.getElementById('kaseExtraSections'))return;
+  const archive=document.getElementById('kaseArchive');
+  if(!archive)return;
+  const wrap=document.createElement('div');
+  wrap.id='kaseExtraSections';
+  wrap.style.cssText='margin-top:18px;display:grid;gap:18px';
+  wrap.innerHTML=`
+    <section class="kv-kase-card">
+      <div class="kv-kase-card-head">
+        <div><h3 style="margin:0">Последние 10 сделок</h3><div id="tradesStatus" class="muted small">KASE public</div></div>
+      </div>
+      <div style="overflow:auto">
+        <table class="kv-archive-table">
+          <thead><tr><th>Дата</th><th>Время</th><th>Цена</th><th>Тренд %</th><th>Объем, шт</th><th>млн KZT</th><th>тыс. USD</th></tr></thead>
+          <tbody id="recentTradesRows"><tr><td colspan="7" class="kv-archive-empty">Загрузка…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="kv-kase-card">
+      <div class="kv-kase-card-head">
+        <div><h3 style="margin:0">Другие ценные бумаги</h3><div class="muted small">Связанные инструменты эмитента по данным KASE</div></div>
+      </div>
+      <div style="overflow:auto">
+        <table class="kv-archive-table">
+          <thead><tr><th>Торговый код</th><th>ISIN</th><th>Площадка</th><th>Сектор</th><th>Категория</th><th>Торги</th><th>Индекс</th></tr></thead>
+          <tbody id="otherSecuritiesRows"><tr><td colspan="7" class="kv-archive-empty">Загрузка…</td></tr></tbody>
+        </table>
+      </div>
+    </section>`;
+  archive.parentNode.insertBefore(wrap,archive.nextSibling);
+}
+function kvEsc(x){return String(x??'—').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 async function openStockDetail(ticker){
   kvDetailTicker=ticker;kvDetailRange=kvDetailRange||'all';
   const n=KV_STOCKS.find(x=>x[0]===ticker)?.[1]||ticker,s=D?.result?.asset_stats?.[ticker],q=window.kvQuotes?.[ticker];
@@ -770,7 +803,7 @@ async function openStockDetail(ticker){
   document.querySelectorAll('.kv-kase-tab').forEach(x=>x.classList.toggle('active',x.dataset.kaseTab==='characteristics'));
   document.querySelectorAll('.kv-kase-section').forEach(x=>x.style.display=x.id==='kaseCharacteristics'?'':'none');
   ['secTicker','secIsin','secPlatform','secSector','secCategory','secTrading','secIndex'].forEach(id=>document.getElementById(id).textContent='Загрузка…');
-  document.getElementById('archiveStatus').textContent='Загрузка…';
+  ensureKaseExtraSections();\n  document.getElementById('archiveStatus').textContent='Загрузка…';\n  document.getElementById('tradesStatus').textContent='Загрузка…';\n  document.getElementById('recentTradesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Загрузка сделок KASE…</td></tr>';\n  document.getElementById('otherSecuritiesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Загрузка…</td></tr>';
   document.getElementById('archiveRows').innerHTML='<tr><td colspan="11" class="kv-archive-empty">Загрузка архива KASE…</td></tr>';
   kvOpenModal('stockDetailModal');drawStockDetail(ticker,kvDetailRange);
   try{
@@ -783,7 +816,12 @@ async function openStockDetail(ticker){
     document.getElementById('secTrading').textContent=sec.trading_start||'—';
     document.getElementById('secIndex').textContent=sec.index||'—';
     document.getElementById('archiveStatus').textContent=rows.length+' строк • KASE public';
-    document.getElementById('archiveRows').innerHTML=rows.length?rows.map(r=>'<tr>'+['date_period','bid','offer','last','w_aver','high','low','trade','shares','m_kzt','th_usd'].map(k=>'<td>'+String(r[k]??'—').replace(/</g,'&lt;')+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="11" class="kv-archive-empty">Архив не найден.</td></tr>';
+    document.getElementById('archiveRows').innerHTML=rows.length?rows.map(r=>'<tr>'+['date_period','bid','offer','last','w_aver','high','low','trade','shares','m_kzt','th_usd'].map(k=>'<td>'+kvEsc(r[k])+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="11" class="kv-archive-empty">Архив не найден.</td></tr>';
+    const trades=j.recent_trades||[];
+    document.getElementById('tradesStatus').textContent=trades.length+' сделок • KASE public';
+    document.getElementById('recentTradesRows').innerHTML=trades.length?trades.map(r=>'<tr><td>'+kvEsc(r.date)+'</td><td>'+kvEsc(r.time)+'</td><td>'+kvEsc(r.price)+'</td><td>'+kvEsc(r.trend_pct)+'</td><td>'+kvEsc(r.shares)+'</td><td>'+kvEsc(r.m_kzt)+'</td><td>'+kvEsc(r.th_usd)+'</td></tr>').join(''):'<tr><td colspan="7" class="kv-archive-empty">Сделки не найдены.</td></tr>';
+    const others=j.other_securities||[];
+    document.getElementById('otherSecuritiesRows').innerHTML=others.length?others.map(r=>'<tr><td><b>'+kvEsc(r.ticker)+'</b></td><td>'+kvEsc(r.isin)+'</td><td>'+kvEsc(r.platform)+'</td><td>'+kvEsc(r.sector)+'</td><td>'+kvEsc(r.category)+'</td><td>'+kvEsc(r.trading_start)+'</td><td>'+kvEsc(r.index)+'</td></tr>').join(''):'<tr><td colspan="7" class="kv-archive-empty">Связанные бумаги не найдены.</td></tr>';
     const first=rows[0]||{};
     document.getElementById('tradeLast').textContent=first.last||q?.price||'—';
     document.getElementById('tradeBid').textContent=first.bid||'—';
@@ -793,6 +831,9 @@ async function openStockDetail(ticker){
     document.getElementById('tradeLow').textContent=first.low||'—';
   }catch(e){
     document.getElementById('archiveStatus').textContent='Ошибка загрузки';
+    document.getElementById('tradesStatus').textContent='Ошибка загрузки';
+    document.getElementById('recentTradesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Не удалось получить сделки KASE.</td></tr>';
+    document.getElementById('otherSecuritiesRows').innerHTML='<tr><td colspan="7" class="kv-archive-empty">Не удалось получить связанные бумаги KASE.</td></tr>';
     document.getElementById('archiveRows').innerHTML='<tr><td colspan="11" class="kv-archive-empty">Не удалось получить архив KASE.</td></tr>';
   }
 }
