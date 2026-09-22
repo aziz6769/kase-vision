@@ -490,14 +490,24 @@ function kvNewsRender(items){
   </div>`).join('');
   box.querySelectorAll('[data-news]').forEach(el=>el.onclick=()=>{const n=items[Number(el.dataset.news)];if(n?.url)window.open(n.url,'_blank','noopener')});
 }
+const KV_NEWS_FALLBACK=[
+  {title:'Nasdaq обновил рекорд на фоне интереса к AI, нефть опустилась ниже $100',source:'Reuters',published_at:'22.09.2026',url:'https://www.reuters.com/world/china/global-markets-wrapup-1-2026-09-22/'},
+  {title:'Американские акции держатся около исторических максимумов, рынки следят за нефтью',source:'AP',published_at:'22.09.2026',url:'https://apnews.com/article/de8c5f9659e44556e40e661f794b48ad'},
+  {title:'Торговые переговоры США и Китая, тарифы, AI и энергетика остаются в центре внимания рынков',source:'The Wall Street Journal',published_at:'22.09.2026',url:'https://www.wsj.com/articles/trumps-u-n-speech-and-china-talks-put-tariffs-ai-and-energy-in-focus-36a90be6'},
+  {title:'Снижение цены нефти ниже $100 влияет на ожидания по инфляции и мировым рынкам',source:'The Guardian',published_at:'22.09.2026',url:'https://www.theguardian.com/business/live/2026/sep/22/uk-government-borrowing-august-fiscal-straightjacket-bond-vigilantes-assemble'},
+  {title:'Рост AI-сектора поддерживает азиатские рынки, внимание инвесторов остаётся на инфляции',source:'ABC News',published_at:'22.09.2026',url:'https://www.abc.net.au/news/2026-09-22/asx-markets-business-live-news/107179814'}
+];
 async function loadWorldNews(){
   const box=document.getElementById('worldNews');box.innerHTML='<div class="muted small">Обновляю главные новости…</div>';
   try{
     const res=await fetch('/api/news',{cache:'no-store'});const j=await res.json();
-    kvNewsItems=j.items||[];kvNewsRender(kvNewsItems);
+    kvNewsItems=(j.items&&j.items.length)?j.items:KV_NEWS_FALLBACK;kvNewsRender(kvNewsItems);
     const u=document.getElementById('newsUpdated');
-    if(u)u.textContent=j.updated_at?'Обновлено '+new Date(j.updated_at).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' • 5 главных событий':'Обновляется каждый день';
-  }catch(e){box.innerHTML='<div class="muted small">Не удалось обновить новости.</div>'}
+    if(u)u.textContent=j.updated_at?'Обновлено '+new Date(j.updated_at).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' • 5 главных событий':'Главные новости дня';
+  }catch(e){
+    kvNewsItems=KV_NEWS_FALLBACK;kvNewsRender(kvNewsItems);
+    const u=document.getElementById('newsUpdated');if(u)u.textContent='Главные новости дня • резервная лента';
+  }
 }
 let kvNewsDay=new Date().toLocaleDateString('en-CA');
 setInterval(()=>{
