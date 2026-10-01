@@ -913,22 +913,41 @@ setTimeout(()=>{kvSyncUser();if(appStarted){loadWorldNews();kvRefreshDashboardQu
 </style>
 <script id="kase-vision-nav-lock">
 (function(){
+  function isHomeLink(a){
+    if(!a)return false;
+    const href=(a.getAttribute('href')||'').trim();
+    return href==='#dashboard'||href==='#home'||a.dataset.side==='dashboard'||/главн/i.test(a.textContent||'');
+  }
   function lockNonHomeNav(){
     document.querySelectorAll('header a, .kv-sidebar a').forEach(function(a){
-      const href=(a.getAttribute('href')||'').trim();
-      const isHome=href==='#dashboard'||href==='#home'||a.dataset.side==='dashboard'||/главн/i.test(a.textContent||'');
-      if(isHome)return;
+      if(isHomeLink(a))return;
       a.classList.add('kv-nav-disabled');
       a.setAttribute('aria-disabled','true');
       a.setAttribute('tabindex','-1');
-      a.addEventListener('click',function(e){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      },true);
+      a.onclick=function(e){e.preventDefault();return false;};
     });
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lockNonHomeNav);
-  else lockNonHomeNav();
+  document.addEventListener('click',function(e){
+    const a=e.target.closest && e.target.closest('header a, .kv-sidebar a');
+    if(a && !isHomeLink(a)){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  },true);
+  document.addEventListener('pointerdown',function(e){
+    const a=e.target.closest && e.target.closest('header a, .kv-sidebar a');
+    if(a && !isHomeLink(a)){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  },true);
+  function init(){lockNonHomeNav();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  setTimeout(lockNonHomeNav,500);
+  setTimeout(lockNonHomeNav,1500);
 })();
 </script></body>
 </html>
