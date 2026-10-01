@@ -908,5 +908,27 @@ setTimeout(()=>{kvSyncUser();if(appStarted){loadWorldNews();kvRefreshDashboardQu
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kvInitHome);else kvInitHome();
 })();
+</script><style id="kase-vision-nav-lock-style">
+.kv-nav-disabled{opacity:.45;cursor:not-allowed!important}
+</style>
+<script id="kase-vision-nav-lock">
+(function(){
+  function lockNonHomeNav(){
+    document.querySelectorAll('header a, .kv-sidebar a').forEach(function(a){
+      const href=(a.getAttribute('href')||'').trim();
+      const isHome=href==='#dashboard'||href==='#home'||a.dataset.side==='dashboard'||/главн/i.test(a.textContent||'');
+      if(isHome)return;
+      a.classList.add('kv-nav-disabled');
+      a.setAttribute('aria-disabled','true');
+      a.setAttribute('tabindex','-1');
+      a.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      },true);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lockNonHomeNav);
+  else lockNonHomeNav();
+})();
 </script></body>
 </html>
