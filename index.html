@@ -116,6 +116,7 @@ canvas{background:#061522;border-color:#183852}
 .kv-news-topic{padding:2px 5px;border:1px solid #234b68;border-radius:4px;color:#6fb5e8}
 .kv-news-arrow{color:#5c91bc;font-size:20px;transition:transform .16s ease}
 .kv-news-item:hover .kv-news-arrow{transform:translateX(3px)}
+.kv-news-filters{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}.kv-news-filter{border:1px solid #214a68;background:#071c2e;color:#86a6c1;border-radius:7px;padding:6px 9px;font-size:10px;cursor:pointer}.kv-news-filter.active{background:#0c4772;color:#dff1ff;border-color:#317eb4}.kv-news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kv-news-card{display:grid;grid-template-columns:38px minmax(0,1fr) 15px;gap:10px;align-items:center;padding:10px;border:1px solid #143b57;border-radius:9px;background:#061827;cursor:pointer}.kv-news-card:hover{background:#0a2439;border-color:#245d82}.kv-news-region{font-size:9px;color:#62b2eb;margin-top:4px}.kv-news-card .kv-news-title{-webkit-line-clamp:3}.kv-news-empty{padding:18px;text-align:center;color:#7894ad}@media(max-width:700px){.kv-news-grid{grid-template-columns:1fr}}
 .kv-news-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:9px;border-top:1px solid #12334d;font-size:9px;color:#617f9b}
 .kv-news-footer strong{color:#8eb8d8}
 @media(max-width:900px){.kv-dashboard-grid{grid-template-columns:1fr}.kv-news-title{font-size:12px}}
@@ -318,21 +319,15 @@ nav a:hover{color:#07883b}
   <div class="kv-dashboard-grid">
     <div class="kv-panel" id="dashboardNews" style="padding:12px">
       <div class="kv-panel-head" style="padding:4px 5px 10px">
-        <div><h3>🌐 Глобальные новости</h3><div id="newsUpdated" class="kv-news-meta">5 главных событий • обновляется каждый день</div></div>
+        <div><h3>📰 Новости ценных бумаг</h3><div id="newsUpdated" class="kv-news-meta">KASE + мировые рынки • автообновление каждые 15 минут</div></div>
         <button id="refreshNews">Обновить ↻</button>
       </div>
-      <div id="worldNews">
-        <div class="kv-news-hero">
-          <div class="kv-news-featured"><div class="kv-news-thumb">R</div><div class="kv-news-title">Nasdaq обновил рекорд на фоне интереса к AI, нефть опустилась ниже $100</div><div class="kv-news-meta"><span class="kv-news-source">Reuters</span><span class="kv-news-sep">•</span><span>22.09.2026</span><span class="kv-news-topic">MARKETS</span></div></div>
-          <div class="kv-news-side">
-            <div class="kv-news-item"><div class="kv-news-thumb">AP</div><div class="kv-news-copy"><div class="kv-news-title">Американские акции держатся около исторических максимумов, рынки следят за нефтью</div><div class="kv-news-meta">AP • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
-            <div class="kv-news-item"><div class="kv-news-thumb">WS</div><div class="kv-news-copy"><div class="kv-news-title">Торговые переговоры США и Китая остаются в центре внимания рынков</div><div class="kv-news-meta">The Wall Street Journal • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
-            <div class="kv-news-item"><div class="kv-news-thumb">TG</div><div class="kv-news-copy"><div class="kv-news-title">Цена нефти влияет на ожидания по инфляции и мировым рынкам</div><div class="kv-news-meta">The Guardian • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
-            <div class="kv-news-item"><div class="kv-news-thumb">ABC</div><div class="kv-news-copy"><div class="kv-news-title">AI-сектор поддерживает азиатские рынки</div><div class="kv-news-meta">ABC News • 22.09.2026</div></div><div class="kv-news-arrow">›</div></div>
-          </div>
-        </div>
-        <div class="kv-news-footer"><span><strong>5</strong> главных событий дня</span><span>Загрузка свежей ленты…</span></div>
+      <div class="kv-news-filters" id="newsFilters">
+        <button class="kv-news-filter active" data-news-filter="all">Все</button>
+        <button class="kv-news-filter" data-news-filter="kz">Казахстан / KASE</button>
+        <button class="kv-news-filter" data-news-filter="world">Мировые рынки</button>
       </div>
+      <div id="worldNews"><div class="muted small">Загружаю свежие новости…</div></div>
     </div>
     <div class="kv-panel">
       <div class="kv-panel-head"><h3>Акции KASE</h3><button class="kv-all-btn" id="openAllStocks">Все →</button></div>
@@ -627,53 +622,45 @@ function kvNewsSourceInitial(source){
   return s.split(/\\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase().slice(0,2)||'N';
 }
 function kvNewsRender(items){
-  const box=document.getElementById('worldNews');
-  if(!items||!items.length){box.innerHTML='<div class="muted small" style="padding:20px">Новости временно недоступны.</div>';return}
-  const featured=items[0], rest=items.slice(1,5);
-  const featuredHtml=`<div class="kv-news-hero">
-    <div class="kv-news-featured" data-news="0" role="button" tabindex="0">
-      <div class="kv-news-thumb">${kvNewsSourceInitial(featured.source)}</div>
-      <div class="kv-news-title">${featured.title||'Главное событие мировых рынков'}</div>
-      <div class="kv-news-meta"><span class="kv-news-source">${featured.source||'News'}</span><span class="kv-news-sep">•</span><span>${featured.published_at||'сегодня'}</span><span class="kv-news-topic">${kvNewsTopic(featured.title)}</span></div>
-    </div>
-    <div class="kv-news-side">${rest.map((x,j)=>`<div class="kv-news-item" data-news="${j+1}" role="button" tabindex="0">
-      <div class="kv-news-thumb">${kvNewsSourceInitial(x.source)}</div>
-      <div class="kv-news-copy"><div class="kv-news-title">${x.title||''}</div><div class="kv-news-meta"><span class="kv-news-source">${x.source||'News'}</span><span class="kv-news-sep">•</span><span>${x.published_at||'сегодня'}</span></div></div>
-      <div class="kv-news-arrow">›</div>
-    </div>`).join('')}
-    </div>
-  </div>`;
-  box.innerHTML=featuredHtml+`<div class="kv-news-footer"><span><strong>5</strong> главных событий дня</span><span>Нажмите на новость, чтобы открыть источник ↗</span></div>`;
-  box.querySelectorAll('[data-news]').forEach(el=>{
-    const open=()=>{const n=items[Number(el.dataset.news)];if(n?.url)window.open(n.url,'_blank','noopener')};
+  const box=document.getElementById('worldNews'); if(!box)return;
+  const filter=document.querySelector('.kv-news-filter.active')?.dataset.newsFilter||'all';
+  const visible=filter==='all'?items:items.filter(x=>x.region===filter);
+  if(!visible.length){box.innerHTML='<div class="kv-news-empty">Для выбранной категории свежих новостей пока нет.</div>';return}
+  box.innerHTML='<div class="kv-news-grid">'+visible.map((x,i)=>`<div class="kv-news-card" data-news-index="${i}" role="button" tabindex="0">
+    <div class="kv-news-thumb">${kvNewsSourceInitial(x.source)}</div>
+    <div><div class="kv-news-title">${x.title||''}</div>
+      <div class="kv-news-meta"><span class="kv-news-source">${x.source||'News'}</span><span class="kv-news-sep">•</span><span>${x.published_at||'сегодня'}</span></div>
+      <div class="kv-news-region">${x.region==='kz'?'КАЗАХСТАН / KASE':'МИРОВЫЕ РЫНКИ'}</div>
+    </div><div class="kv-news-arrow">›</div>
+  </div>`).join('')+'</div><div class="kv-news-footer"><span><strong>'+visible.length+'</strong> свежих материалов</span><span>Нажмите на новость — откроется источник ↗</span></div>';
+  box.querySelectorAll('[data-news-index]').forEach(el=>{
+    const open=()=>{const n=visible[Number(el.dataset.newsIndex)];if(n?.url)window.open(n.url,'_blank','noopener')};
     el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}};
   });
 }
 const KV_NEWS_FALLBACK=[
-  {title:'Nasdaq обновил рекорд на фоне интереса к AI, нефть опустилась ниже $100',source:'Reuters',published_at:'22.09.2026',url:'https://www.reuters.com/world/china/global-markets-wrapup-1-2026-09-22/'},
-  {title:'Американские акции держатся около исторических максимумов, рынки следят за нефтью',source:'AP',published_at:'22.09.2026',url:'https://apnews.com/article/de8c5f9659e44556e40e661f794b48ad'},
-  {title:'Торговые переговоры США и Китая, тарифы, AI и энергетика остаются в центре внимания рынков',source:'The Wall Street Journal',published_at:'22.09.2026',url:'https://www.wsj.com/articles/trumps-u-n-speech-and-china-talks-put-tariffs-ai-and-energy-in-focus-36a90be6'},
-  {title:'Снижение цены нефти ниже $100 влияет на ожидания по инфляции и мировым рынкам',source:'The Guardian',published_at:'22.09.2026',url:'https://www.theguardian.com/business/live/2026/sep/22/uk-government-borrowing-august-fiscal-straightjacket-bond-vigilantes-assemble'},
-  {title:'Рост AI-сектора поддерживает азиатские рынки, внимание инвесторов остаётся на инфляции',source:'ABC News',published_at:'22.09.2026',url:'https://www.abc.net.au/news/2026-09-22/asx-markets-business-live-news/107179814'}
+  {title:'Свежая лента KASE загружается автоматически',source:'KASE',published_at:'сейчас',url:'https://kase.kz/ru/information/news/all',region:'kz'},
+  {title:'Мировая лента рынков загружается автоматически',source:'Markets',published_at:'сейчас',url:'https://news.google.com/search?q=stock%20market',region:'world'}
 ];
 document.querySelectorAll('[data-news-static]').forEach(el=>el.onclick=()=>{const n=KV_NEWS_FALLBACK[Number(el.dataset.newsStatic)];if(n?.url)window.open(n.url,'_blank','noopener')});
-async function loadWorldNews(){
-  const box=document.getElementById('worldNews');box.innerHTML='<div class="muted small">Обновляю главные новости…</div>';
+async async function loadWorldNews(){
+  const box=document.getElementById('worldNews');if(!box)return;
+  box.innerHTML='<div class="muted small">Загружаю свежую ленту…</div>';
   try{
     const res=await fetch('/api/news',{cache:'no-store'});const j=await res.json();
     kvNewsItems=(j.items&&j.items.length)?j.items:KV_NEWS_FALLBACK;kvNewsRender(kvNewsItems);
     const u=document.getElementById('newsUpdated');
-    if(u)u.textContent=j.updated_at?'Обновлено '+new Date(j.updated_at).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' • 5 главных событий':'Главные новости дня';
+    if(u)u.textContent=j.updated_at?'Обновлено '+new Date(j.updated_at).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' • KASE + мировые рынки':'Лента новостей';
   }catch(e){
     kvNewsItems=KV_NEWS_FALLBACK;kvNewsRender(kvNewsItems);
-    const u=document.getElementById('newsUpdated');if(u)u.textContent='Главные новости дня • резервная лента';
+    const u=document.getElementById('newsUpdated');if(u)u.textContent='Резервная лента • источник временно недоступен';
   }
 }
-let kvNewsDay=new Date().toLocaleDateString('en-CA');
-setInterval(()=>{
-  const day=new Date().toLocaleDateString('en-CA');
-  if(day!==kvNewsDay){kvNewsDay=day;loadWorldNews();}
-},30*60*1000);
+document.querySelectorAll('.kv-news-filter').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.kv-news-filter').forEach(x=>x.classList.remove('active'));btn.classList.add('active');kvNewsRender(kvNewsItems||[]);
+}));
+document.getElementById('refreshNews')?.addEventListener('click',loadWorldNews);
+setInterval(loadWorldNews,15*60*1000);
 function kvStockLogo(t){return t==='HSBK'?'HB':t==='KSPI'?'K':t==='KZAP'?'KZ':t==='KMGZ'?'KM':t==='KCEL'?'KC':'KE'}
 function renderDashboardStocks(){
   const box=document.getElementById('dashboardStocks');
@@ -913,41 +900,27 @@ setTimeout(()=>{kvSyncUser();if(appStarted){loadWorldNews();kvRefreshDashboardQu
 </style>
 <script id="kase-vision-nav-lock">
 (function(){
-  function isHomeLink(a){
+  function isAllowedLink(a){
     if(!a)return false;
     const href=(a.getAttribute('href')||'').trim();
-    return href==='#dashboard'||href==='#home'||a.dataset.side==='dashboard'||/главн/i.test(a.textContent||'');
+    return href==='#dashboard'||href==='#home'||href==='#dashboardNews'||a.dataset.side==='dashboard'||/главн/i.test(a.textContent||'');
   }
   function lockNonHomeNav(){
     document.querySelectorAll('header a, .kv-sidebar a').forEach(function(a){
-      if(isHomeLink(a))return;
-      a.classList.add('kv-nav-disabled');
-      a.setAttribute('aria-disabled','true');
-      a.setAttribute('tabindex','-1');
-      a.onclick=function(e){e.preventDefault();return false;};
+      if(isAllowedLink(a)){a.classList.remove('kv-nav-disabled');a.removeAttribute('aria-disabled');a.removeAttribute('tabindex');return;}
+      a.classList.add('kv-nav-disabled');a.setAttribute('aria-disabled','true');a.setAttribute('tabindex','-1');
     });
   }
   document.addEventListener('click',function(e){
-    const a=e.target.closest && e.target.closest('header a, .kv-sidebar a');
-    if(a && !isHomeLink(a)){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    }
+    const a=e.target.closest&&e.target.closest('header a, .kv-sidebar a');
+    if(a&&!isAllowedLink(a)){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false;}
   },true);
   document.addEventListener('pointerdown',function(e){
-    const a=e.target.closest && e.target.closest('header a, .kv-sidebar a');
-    if(a && !isHomeLink(a)){
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
+    const a=e.target.closest&&e.target.closest('header a, .kv-sidebar a');
+    if(a&&!isAllowedLink(a)){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();}
   },true);
-  function init(){lockNonHomeNav();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-  setTimeout(lockNonHomeNav,500);
-  setTimeout(lockNonHomeNav,1500);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lockNonHomeNav);else lockNonHomeNav();
+  setTimeout(lockNonHomeNav,500);setTimeout(lockNonHomeNav,1500);
 })();
 </script></body>
 </html>
