@@ -643,7 +643,7 @@ const KV_NEWS_FALLBACK=[
   {title:'Мировая лента рынков загружается автоматически',source:'Markets',published_at:'сейчас',url:'https://news.google.com/search?q=stock%20market',region:'world'}
 ];
 document.querySelectorAll('[data-news-static]').forEach(el=>el.onclick=()=>{const n=KV_NEWS_FALLBACK[Number(el.dataset.newsStatic)];if(n?.url)window.open(n.url,'_blank','noopener')});
-async async function loadWorldNews(){
+async function loadWorldNews(){
   const box=document.getElementById('worldNews');if(!box)return;
   box.innerHTML='<div class="muted small">Загружаю свежую ленту…</div>';
   try{
