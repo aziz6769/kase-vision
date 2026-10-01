@@ -778,109 +778,115 @@ async def save_preferences(request: Request):
     return {"user": public_user(updated)}
 
 
-# One editorial-style set of five global headlines per Almaty calendar day.
-# Public RSS indexes are used; each card remains clickable to the publisher/index URL.
-NEWS_TTL = 24 * 60 * 60
-news_cache = {"day": None, "fetched_at": None, "items": []}
+# Live securities-news aggregation: Kazakhstan/KASE + global markets.
+# KASE is the primary Kazakhstan source; Google News RSS is used as a public
+# index for global financial publishers. Headlines link to the original page.
+NEWS_TTL = 15 * 60
+news_cache = {"fetched_at": None, "items": []}
 
 NEWS_FEEDS = [
-    "https://news.google.com/rss/search?q=global%20markets%20economy%20finance&hl=en-US&gl=US&ceid=US:en",
-    "https://news.google.com/rss/search?q=central%20banks%20inflation%20interest%20rates&hl=en-US&gl=US&ceid=US:en",
-    "https://news.google.com/rss/search?q=oil%20energy%20global%20markets&hl=en-US&gl=US&ceid=US:en",
-    "https://news.google.com/rss/search?q=technology%20AI%20global%20business&hl=en-US&gl=US&ceid=US:en",
-    "https://news.google.com/rss/search?q=world%20trade%20global%20economy%20geopolitics&hl=en-US&gl=US&ceid=US:en",
+    ("world", "https://news.google.com/rss/search?q=stocks%20OR%20bonds%20OR%20securities%20OR%20stock%20market&hl=en-US&gl=US&ceid=US:en"),
+    ("world", "https://news.google.com/rss/search?q=Reuters%20global%20markets%20stocks%20bonds&hl=en-US&gl=US&ceid=US:en"),
+    ("world", "https://news.google.com/rss/search?q=Fed%20ECB%20interest%20rates%20bonds%20stocks&hl=en-US&gl=US&ceid=US:en"),
 ]
 
-NEWS_SOURCE_WEIGHT = {
-    "Reuters": 8, "Associated Press": 7, "BBC": 6, "Bloomberg": 6,
-    "Financial Times": 6, "CNBC": 5, "Al Jazeera": 4,
-}
-NEWS_TOPIC_WEIGHT = {
-    "fed": 5, "federal reserve": 5, "ecb": 5, "bank of japan": 5,
-    "interest rate": 5, "inflation": 5, "tariff": 4, "trade": 4,
-    "oil": 4, "energy": 4, "nasdaq": 4, "s&p 500": 4, "stocks": 3,
-    "markets": 3, "economy": 3, "ai": 3, "artificial intelligence": 3,
-    "china": 3, "united states": 2, "europe": 2,
-}
+KASE_NEWS_URL = "https://kase.kz/ru/information/news/all"
 
-def _almaty_day():
-    from zoneinfo import ZoneInfo
-    return datetime.now(ZoneInfo("Asia/Almaty")).date().isoformat()
-
-def _news_score(item):
-    title = item.get("title", "").lower()
-    score = NEWS_SOURCE_WEIGHT.get(item.get("source", ""), 1)
-    score += sum(weight for phrase, weight in NEWS_TOPIC_WEIGHT.items() if phrase in title)
+def _news_dt(value):
     try:
         from email.utils import parsedate_to_datetime
-        published = parsedate_to_datetime(item.get("published_at") or "")
-        age_hours = max(0.0, (datetime.now(timezone.utc) - published.astimezone(timezone.utc)).total_seconds() / 3600)
-        score += max(0.0, 10.0 - min(age_hours, 10.0))
+        return parsedate_to_datetime(value).astimezone(timezone.utc)
+    except Exception:
+        return datetime.now(timezone.utc)
+
+def _news_item_key(title):
+    return re.sub(r"[^a-zа-я0-9]+", " ", (title or "").lower()).strip()
+
+def _is_security_news(title):
+    t=(title or "").lower()
+    words=("акци", "облигац", "ценн", "бирж", "kase", "stock", "bond",
+           "securit", "shares", "share", "equity", "nasdaq", "s&p", "dow",
+           "index", "ipo", "etf", "dividend", "yield", "market")
+    return any(w in t for w in words)
+
+async def _fetch_kase_news(client):
+    items=[]
+    try:
+        response=await client.get(KASE_NEWS_URL)
+        response.raise_for_status()
+        soup=BeautifulSoup(response.text, "html.parser")
+        for a in soup.select('a[href*="/information/news/show/"]'):
+            title=a.get_text(" ", strip=True)
+            href=a.get("href")
+            if not title or not href:
+                continue
+            url=href if href.startswith("http") else "https://kase.kz"+href
+            parent=a.parent
+            context=parent.get_text(" ", strip=True) if parent else ""
+            date_match=re.search(r"\\b\\d{2}\\.\\d{2}\\.\\d{2}\\b", context)
+            items.append({
+                "title": title,
+                "url": url,
+                "source": "KASE",
+                "published_at": date_match.group(0) if date_match else None,
+                "region": "kz",
+            })
     except Exception:
         pass
-    return score
+    return items
 
 async def fetch_world_news():
-    now = datetime.now(timezone.utc)
-    today = _almaty_day()
-    if news_cache.get("day") == today and news_cache.get("items"):
+    now=datetime.now(timezone.utc)
+    if news_cache.get("fetched_at") and (now-news_cache["fetched_at"]).total_seconds() < NEWS_TTL and news_cache.get("items"):
         return news_cache["items"]
 
-    items = []
-    seen = set()
-    async with httpx.AsyncClient(
-        timeout=10,
-        follow_redirects=True,
-        headers={"User-Agent": "Mozilla/5.0 KASE-Vision-News/1.0"},
-    ) as client:
-        results = await asyncio.gather(
-            *(client.get(url) for url in NEWS_FEEDS),
-            return_exceptions=True,
-        )
+    items=[]
+    seen=set()
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True,
+        headers={"User-Agent":"Mozilla/5.0 KASE-Vision-News/2.0"}) as client:
+        items.extend(await _fetch_kase_news(client))
+        results=await asyncio.gather(*(client.get(url) for _,url in NEWS_FEEDS), return_exceptions=True)
         for response in results:
             if isinstance(response, Exception):
                 continue
             try:
                 response.raise_for_status()
-                root = BeautifulSoup(response.text, "xml")
+                root=BeautifulSoup(response.text, "xml")
                 for item in root.find_all("item"):
-                    title, link = item.find("title"), item.find("link")
-                    source, pub = item.find("source"), item.find("pubDate")
-                    if not title or not link:
+                    title_node,link_node=item.find("title"),item.find("link")
+                    if not title_node or not link_node:
                         continue
-                    title_text = title.get_text(" ", strip=True)
-                    source_text = source.get_text(" ", strip=True) if source else "News"
-                    key = re.sub(r"[^a-z0-9]+", " ", title_text.lower()).strip()
+                    title=title_node.get_text(" ",strip=True)
+                    link=link_node.get_text(strip=True)
+                    source_node,pub=item.find("source"),item.find("pubDate")
+                    source=source_node.get_text(" ",strip=True) if source_node else "News"
+                    if not link or not title or not _is_security_news(title):
+                        continue
+                    key=_news_item_key(title)
                     if not key or key in seen:
                         continue
                     seen.add(key)
                     items.append({
-                        "title": title_text,
-                        "url": link.get_text(strip=True),
-                        "source": source_text,
-                        "published_at": pub.get_text(" ", strip=True) if pub else None,
+                        "title":title,
+                        "url":link,
+                        "source":source,
+                        "published_at":pub.get_text(" ",strip=True) if pub else None,
+                        "region":"world",
                     })
             except Exception:
                 continue
 
-    # Rank by publisher, market relevance and freshness, while avoiding five
-    # near-identical stories about the same topic.
-    items.sort(key=_news_score, reverse=True)
-    selected, selected_topics = [], []
-    for item in items:
-        title = item["title"].lower()
-        topic = next((p for p in NEWS_TOPIC_WEIGHT if p in title), None)
-        if topic and topic in selected_topics:
-            continue
-        selected.append(item)
-        if topic:
-            selected_topics.append(topic)
-        if len(selected) == 5:
-            break
-
+    # Keep the feed focused on securities: Kazakhstan first, then the newest
+    # global stories. Limit to 20 cards so the tab remains fast and readable.
+    kz=[x for x in items if x.get("region")=="kz"]
+    world=[x for x in items if x.get("region")=="world"]
+    world.sort(key=lambda x:_news_dt(x.get("published_at")), reverse=True)
+    kz.sort(key=lambda x:_news_dt(x.get("published_at")), reverse=True)
+    selected=(kz[:10]+world[:20])[:30]
     if selected:
-        news_cache.update({"day": today, "fetched_at": now, "items": selected})
+        news_cache.update({"fetched_at":now,"items":selected})
     return selected or news_cache.get("items", [])
+
 
 @app.get("/api/news")
 async def api_news():
