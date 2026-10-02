@@ -605,13 +605,14 @@ async def fetch_kase_archive(ticker: str):
         for table in tables:
             rows = []
             for tr in table.find_all("tr"):
-                cells = [re.sub(r"\\s+", " ", c.get_text(" ", strip=True)) for c in tr.find_all(["th", "td"])]
+                cells = [re.sub(r"\s+", " ", c.get_text(" ", strip=True)) for c in tr.find_all(["th", "td"])]
                 if cells: rows.append(cells)
             if not rows: continue
             headers = [x.lower() for x in rows[0]]
             if "date/period" in headers: summary_rows = rows[1:]
-            required = {"торговый код","isin","площадка","сектор","категория","торги","индекс"}
+            required = {"торговый код","isin","площадка","сектор","категория"}
             if required.issubset(set(headers)):
+                # KASE may label the opening date column differently (for example "Дата открытия торгов").
                 for row in rows[1:]:
                     if row and row[0].upper() == ticker:
                         vals = row + [""] * (7-len(row))
@@ -823,7 +824,7 @@ async def _fetch_kase_news(client):
             url=href if href.startswith("http") else "https://kase.kz"+href
             parent=a.parent
             context=parent.get_text(" ", strip=True) if parent else ""
-            date_match=re.search(r"\\b\\d{2}\\.\\d{2}\\.\\d{2}\\b", context)
+            date_match=re.search(r"\b\d{2}\.\d{2}\.\d{2}\b", context)
             items.append({
                 "title": title,
                 "url": url,
