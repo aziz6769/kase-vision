@@ -10,8 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Apply the production UI repair before starting FastAPI.
-RUN python3 fix_local.py
 
 EXPOSE 8000
 
